@@ -1033,6 +1033,15 @@
     let naverClientSecret = localStorage.getItem('naverClientSecret') || '';
     let backendUrl = localStorage.getItem('backendUrl') || 'http://localhost:3000';
 
+    // 브라우저 접속 주소(IP)를 동적으로 파싱하여 백엔드 IP 자동 감지 및 변환
+    function getActiveBackendUrl() {
+      let currentBackend = localStorage.getItem('backendUrl') || backendUrl;
+      if (currentBackend.includes('localhost') && window.location.hostname && window.location.hostname !== 'localhost') {
+        return `http://${window.location.hostname}:3000`;
+      }
+      return currentBackend;
+    }
+
     // API 키 유효성 검사기 (공백, literal null/undefined, dummy 키 완전 필터링)
     function isValidKey(key) {
       if (!key) return false;
@@ -1475,7 +1484,7 @@
         let metaTitle = "";
         
         try {
-          const res = await fetch(`${backendUrl}/search/parse-url?url=${encodeURIComponent(url)}`);
+          const res = await fetch(`${getActiveBackendUrl()}/search/parse-url?url=${encodeURIComponent(url)}`);
           if (res.ok) {
             const data = await res.json();
             metaTitle = data.title;
@@ -1515,7 +1524,9 @@
           try {
             // 네이버 쇼핑 OpenAPI 실시간 기기 다이렉트 통신 (CORS bypass/WebView 대응)
             const query = encodeURIComponent(searchKeyword);
-            const url = `https://openapi.naver.com/v1/search/shop.json?query=${query}&display=15&sort=asc`;
+            const targetUrl = `https://openapi.naver.com/v1/search/shop.json?query=${query}&display=15&sort=asc`;
+            // 브라우저 CORS 제약을 완벽히 우회하기 위해 안정적인 corsproxy.io 우회 터널 결합
+            const url = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
 
             const response = await fetch(url, {
               headers: {
@@ -1545,7 +1556,7 @@
           try {
             const clientIdParam = isValidKey(naverClientId) ? `&naverClientId=${encodeURIComponent(naverClientId)}` : '';
             const clientSecretParam = isValidKey(naverClientSecret) ? `&naverClientSecret=${encodeURIComponent(naverClientSecret)}` : '';
-            const res = await fetch(`${backendUrl}/search?keyword=${encodeURIComponent(searchKeyword)}${clientIdParam}${clientSecretParam}`);
+            const res = await fetch(`${getActiveBackendUrl()}/search?keyword=${encodeURIComponent(searchKeyword)}${clientIdParam}${clientSecretParam}`);
             if (res.ok) {
               const data = await res.json();
               fetchedItems = data.results || [];
