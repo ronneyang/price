@@ -1259,14 +1259,26 @@
               return !genericWords.some(g => e.description.toLowerCase() === g);
             });
 
+            const noiseWords = [
+              '까지', '열량', '고형량', '칼로리', '영양정보', '소비기한', '유통기한', '보관방법', '총열량', '고형', '식품', '식품유형',
+              '제조원', '판매원', '반품', '교환', '고객', '센터', '상담', '전화', '번호', '원재료명', '함량', '영양', '정보', '보관',
+              '방법', '실온', '냉장', '냉동', '포장', '재질', '내용량', '원산지', '수입원', '주의사항', '소비자', '분쟁', '해결', '기준'
+            ];
+
             if (koreanEntities.length > 0) {
-              detectedKeyword = koreanEntities.slice(0, 2).map(e => e.description).join(' ');
-            } else if (otherEntities.length > 0) {
-              detectedKeyword = otherEntities.slice(0, 2).map(e => e.description).join(' ');
-            } else if (textAnnotations.length > 0) {
+              const filteredEntities = koreanEntities.map(e => e.description).filter(w => !noiseWords.some(nw => w.includes(nw)));
+              detectedKeyword = filteredEntities.slice(0, 2).join(' ');
+            }
+            
+            if (!detectedKeyword && textAnnotations.length > 0) {
               const fullText = textAnnotations[0].description;
-              const koreanWords = fullText.match(/[가-힣]{2,}/g) || [];
-              detectedKeyword = koreanWords.length > 0 ? koreanWords.slice(0, 4).join(' ') : fullText.split('\n')[0].trim();
+              const allWords = fullText.match(/[가-힣]{2,}/g) || [];
+              const koreanWords = allWords.filter(w => !noiseWords.includes(w) && !noiseWords.some(nw => w.includes(nw)));
+              detectedKeyword = koreanWords.length > 0 ? koreanWords.slice(0, 3).join(' ') : fullText.split('\n')[0].trim();
+            }
+
+            if (!detectedKeyword && otherEntities.length > 0) {
+              detectedKeyword = otherEntities.slice(0, 2).map(e => e.description).join(' ');
             }
           } catch (visionErr) {
             console.warn("[최저가집사] Google Vision API 연동 실패. 모형 데이터로 안전하게 대체합니다:", visionErr);
