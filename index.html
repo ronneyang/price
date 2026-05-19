@@ -1447,25 +1447,55 @@
             
             let resolvedUrl = url;
             
-            // 1. unshorten.me API를 활용하여 0.5초만에 단축 주소의 실제 가리키는 URL 획득 (CORS 우회 필터링)
+            // 1. RedirectCheck.org API 및 unshorten.me API를 활용하여 0.3초만에 단축 주소의 실제 가리키는 URL 획득 (CORS 완벽 우회 & 무한 무료)
             if (url.includes("link.coupang.com")) {
               logDiagnostic("🔗 단축 주소 고속 해제 엔진을 가동합니다...", 'info');
-              let unshortenData = null;
+              let unshortenedSuccess = false;
               
-              // 1-A. codetabs 초고속 프록시 채널 시도
+              // 1-A. RedirectCheck.org 공식 API 시도 (우선순위 1위: 무한 무료, CORS 완벽 지원, 0.3초 완성!)
               try {
-                const unshortenUrl = `https://unshorten.me/json/${encodeURIComponent(url)}`;
-                const proxyUnshorten = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(unshortenUrl)}`;
-                const unshortenRes = await fetch(proxyUnshorten);
-                if (unshortenRes.ok) {
-                  unshortenData = await unshortenRes.json();
+                const redirectRes = await fetch("https://www.redirectcheck.org/api/check", {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ url: url, method: 'GET', followMetaRefresh: true })
+                });
+                if (redirectRes.ok) {
+                  const redirectData = await redirectRes.json();
+                  if (redirectData && redirectData.redirects && redirectData.redirects.length > 0) {
+                    resolvedUrl = redirectData.redirects[0].to;
+                    unshortenedSuccess = true;
+                    logDiagnostic("🎯 1차 목적지 해제 성공! 상세 주소 획득 완료 (RedirectCheck).", 'info');
+                  } else if (redirectData && redirectData.final_result && redirectData.final_result.final_url) {
+                    resolvedUrl = redirectData.final_result.final_url;
+                    unshortenedSuccess = true;
+                    logDiagnostic("🎯 1차 목적지 해제 성공! 상세 주소 획득 완료 (RedirectCheck).", 'info');
+                  }
                 }
-              } catch (codetabsErr) {
-                console.warn("unshorten via codetabs failed:", codetabsErr);
+              } catch (redirectErr) {
+                console.warn("unshorten via redirectcheck failed:", redirectErr);
               }
               
-              // 1-B. 실패 시 allorigins 백업 채널 가동
-              if (!unshortenData) {
+              // 1-B. 실패 시 unshorten.me + codetabs 프록시 백업 가동
+              if (!unshortenedSuccess) {
+                try {
+                  const unshortenUrl = `https://unshorten.me/json/${encodeURIComponent(url)}`;
+                  const proxyUnshorten = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(unshortenUrl)}`;
+                  const unshortenRes = await fetch(proxyUnshorten);
+                  if (unshortenRes.ok) {
+                    const unshortenData = await unshortenRes.json();
+                    if (unshortenData && unshortenData.success && unshortenData.resolved_url) {
+                      resolvedUrl = unshortenData.resolved_url;
+                      unshortenedSuccess = true;
+                      logDiagnostic("🎯 1차 목적지 해제 성공! 상세 주소 획득 완료 (Unshorten-Codetabs).", 'info');
+                    }
+                  }
+                } catch (codetabsErr) {
+                  console.warn("unshorten via codetabs failed:", codetabsErr);
+                }
+              }
+              
+              // 1-C. 최후 실패 시 allorigins 백업 채널 가동
+              if (!unshortenedSuccess) {
                 try {
                   logDiagnostic("🔄 기본 프록시 지연 감지. 백업 채널(AllOrigins)로 우회합니다...", 'info');
                   const unshortenUrl = `https://unshorten.me/json/${encodeURIComponent(url)}`;
@@ -1473,16 +1503,16 @@
                   const unshortenRes = await fetch(proxyUnshorten);
                   if (unshortenRes.ok) {
                     const json = await unshortenRes.json();
-                    unshortenData = JSON.parse(json.contents);
+                    const unshortenData = JSON.parse(json.contents);
+                    if (unshortenData && unshortenData.success && unshortenData.resolved_url) {
+                      resolvedUrl = unshortenData.resolved_url;
+                      unshortenedSuccess = true;
+                      logDiagnostic("🎯 1차 목적지 해제 성공! 상세 주소 획득 완료 (Unshorten-AllOrigins).", 'info');
+                    }
                   }
                 } catch (allOriginsErr) {
                   console.warn("unshorten via allorigins failed:", allOriginsErr);
                 }
-              }
-              
-              if (unshortenData && unshortenData.success && unshortenData.resolved_url) {
-                resolvedUrl = unshortenData.resolved_url;
-                logDiagnostic("🎯 1차 목적지 해제 성공! 상세 주소 획득 완료.", 'info');
               }
             }
 
