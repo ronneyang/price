@@ -927,6 +927,28 @@
           </button>
         </div>
 
+        <!-- AI 직접 텍스트 검색 패널 (기본 숨김) -->
+        <div class="dashboard-url-pane" id="dashboard-ai-pane" style="display: none; flex-direction: row; gap: 8px; align-items: center; padding: 12px 14px;">
+          <div class="url-input-wrapper" style="flex: 1; position: relative; display: flex; align-items: center;">
+            <input 
+              type="text" 
+              class="url-input-field" 
+              id="ai-main-input-field" 
+              placeholder="예: 코카콜라 355ml 24캔 찾아줘" 
+              style="padding-right: 32px;"
+            />
+            <button class="clear-input-btn" id="clear-ai-input-btn" style="right: 8px;">&times;</button>
+          </div>
+
+          <button 
+            class="url-search-submit-btn" 
+            id="ai-search-submit-btn" 
+            style="flex-shrink: 0; padding: 12px 16px; font-size: 13px; white-space: nowrap;"
+          >
+            🚀 검색
+          </button>
+        </div>
+
         <!-- 선택된 상품 미리보기 (카메라 촬영 또는 갤러리 선택 시 노출) -->
         <div class="selected-preview-area" id="selected-preview-area" style="display: none;">
           <div class="preview-card-frame">
@@ -1831,66 +1853,7 @@
       }
     }
 
-    // 메인 화면용 AI 직접 검색 파이프라인
-    async function startAiDirectSearch(userInput) {
-      if (!isValidKey(visionApiKey)) {
-        alert("Google API 키가 입력되지 않았습니다. 설정창에서 입력해 주세요.");
-        return;
-      }
-      
-      // 검색 화면 띄우기
-      photoUrl = null;
-      keyword = userInput;
-      status = 'ANALYZING';
-      errorMessage = '';
-      updateStatusUi();
-      loadingMessageText.textContent = '🤖 Gemini AI가 자연어를 분석하여 최적의 검색어를 도출 중...';
 
-      try {
-        const systemContext = `
-너는 한국 온라인 쇼핑 최저가 검색 도우미야.
-사용자 요청: "${userInput}"
-
-위 정보를 바탕으로, 네이버 쇼핑 검색에 가장 적합한 명사형 핵심 검색 키워드를 만들어줘.
-- 반드시 브랜드명과 핵심 명사를 유지해야 해.
-- 사용자 조건(용량, 수량, 단위 등)을 포함해.
-- 결과는 검색 키워드 문자열만 출력해. 설명, 부연, 따옴표 없이.
-- 예시: 펩시 제로 콜라 355ml 24캔
-        `.trim();
-
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${visionApiKey}`;
-        const res = await fetch(geminiUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: systemContext }] }],
-            generationConfig: { temperature: 0.2, maxOutputTokens: 50 }
-          })
-        });
-
-        if (!res.ok) {
-          const errText = await res.text();
-          throw new Error(`Gemini API 통신 에러 (HTTP ${res.status}): ${errText}`);
-        }
-
-        const data = await res.json();
-        const refinedKeyword = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-
-        if (!refinedKeyword) throw new Error('AI 응답을 분석할 수 없습니다.');
-        
-        keyword = refinedKeyword;
-        status = 'SEARCHING';
-        updateStatusUi();
-        
-        await performPriceSearch(refinedKeyword);
-
-      } catch (err) {
-        console.error("AI Direct Search Error:", err);
-        status = 'ERROR';
-        errorMessage = err.message || "AI 분석 과정에서 알 수 없는 에러가 발생했습니다.";
-        updateStatusUi();
-      }
-    }
 
     // 다중 쇼핑몰 최저가 실시간 검색 수행
     async function performPriceSearch(searchKeyword) {
