@@ -1466,44 +1466,7 @@
         }
 
         if (fetchedItems.length === 0) {
-          isMockDataUsed = true;
-          logDiagnostic("🚨 실시간 통신 수집이 제한되어 시뮬레이션 데모 데이터 모드로 자동 우회 작동합니다.", 'warn');
-          // 데모용 고품질 최저가 카드 리스트 제공 (API 키 미설정 시의 시뮬레이션 모드)
-          await new Promise(r => setTimeout(r, 1200));
-          fetchedItems = [
-            { 
-              platform: "쿠팡", 
-              title: `[쿠팡] ${searchKeyword} (로켓배송)`, 
-              price: 4200, 
-              shippingFee: 0, 
-              link: `https://m.coupang.com/nm/search?q=${encodeURIComponent(searchKeyword)}`, 
-              imageUrl: "" 
-            },
-            { 
-              platform: "11번가", 
-              title: `[11번가] ${searchKeyword} 특가팩`, 
-              price: 3800, 
-              shippingFee: 3000, 
-              link: `https://m.11st.co.kr/products/m/search?kwd=${encodeURIComponent(searchKeyword)}`, 
-              imageUrl: "" 
-            },
-            { 
-              platform: "네이버", 
-              title: `[네이버 쇼핑] ${searchKeyword} 최저가 보증`, 
-              price: 4500, 
-              shippingFee: 3000, 
-              link: `https://msearch.shopping.naver.com/search/all?query=${encodeURIComponent(searchKeyword)}`, 
-              imageUrl: "" 
-            },
-            { 
-              platform: "G마켓", 
-              title: `[G마켓] ${searchKeyword} 무료배송`, 
-              price: 5400, 
-              shippingFee: 0, 
-              link: `https://msearch.gmarket.co.kr/search?keyword=${encodeURIComponent(searchKeyword)}`, 
-              imageUrl: "" 
-            }
-          ];
+          logDiagnostic("ℹ️ 실시간 매칭 상품이 검색되지 않았습니다. 결과 없음 화면을 렌더링합니다.", 'warn');
         }
 
         // PC 버전 background.js의 핵심 브랜드 및 모델명 정밀 필터링 이식
@@ -1551,78 +1514,9 @@
       }
     }
 
-    // ── 방화벽(CORS/Akamai) 및 리퍼러 완벽 우회를 위한 안전 링크 이동 브릿지 ──
-    function safeOpenLink(url, event) {
-      if (event) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-      
-      const newWin = window.open('', '_blank');
-      if (!newWin) {
-        window.location.href = url;
-        return;
-      }
-      
-      newWin.opener = null;
-      newWin.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <meta http-equiv="refresh" content="0; url=${url}">
-          <title>이동 중...</title>
-          <style>
-            body { 
-              background: #0d1117; 
-              color: #c9d1d9; 
-              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-              text-align: center; 
-              padding-top: 100px; 
-              margin: 0;
-            }
-            .spinner {
-              border: 3px solid rgba(88, 166, 255, 0.1);
-              border-radius: 50%;
-              border-top: 3px solid #58a6ff;
-              width: 36px;
-              height: 36px;
-              animation: spin 0.8s linear infinite;
-              margin: 0 auto 20px auto;
-            }
-            @keyframes spin {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="spinner"></div>
-          <p style="font-size: 14px; font-weight: 500;">최저가 쇼핑몰로 안전하게 이동 중입니다...</p>
-        </body>
-        </html>
-      `);
-      newWin.document.close();
-    }
-
     // ── 결과 렌더링 엔진 ──
     function renderResultsList() {
       resultsPriceListBox.innerHTML = '';
-      
-      // 만약 실제 결과가 없어 시뮬레이션 데이터를 공급받았을 경우, 고급 안내 배너 노출
-      if (isMockDataUsed) {
-        resultsPriceListBox.innerHTML += `
-          <div class="mock-warning-banner" style="background: rgba(255, 159, 67, 0.08); border: 1px dashed rgba(255, 159, 67, 0.25); border-radius: 12px; padding: 12px; margin-bottom: 16px; font-size: 11px; color: #ff9f43; line-height: 1.6; text-align: left; display: flex; align-items: flex-start; gap: 8px;">
-            <span style="font-size: 15px; margin-top: 1px;">⚠️</span>
-            <div>
-              <strong style="color: #ff9f43; font-size: 12px;">데모 시뮬레이션 모드 가동 중</strong><br>
-              네이버 쇼핑 API에서 <strong>'${keyword}'</strong>에 실시간 매칭되는 온라인 일반 판매 상품이 없어 예시(시뮬레이션) 카드로 표시하고 있습니다.<br>
-              <span style="color: #a9b1d6;">(💡 주변의 펩시 캔, 신라면, 새우깡 등 일반 소매점 판매 상품으로 교체해 테스트해보시면 진짜 실시간 데이터가 100% 매칭되어 작동합니다!)</span>
-            </div>
-          </div>
-        `;
-      }
       
       if (results.length === 0) {
         resultsPriceListBox.innerHTML += `<div class="empty-results">😔 매칭되는 온라인 쇼핑몰 최저가를 찾지 못했습니다.</div>`;
@@ -1633,11 +1527,8 @@
         const fallbackIcon = '🛍️';
         const isGold = index === 0;
         
-        // 싱글 쿼테이션 치환 처리하여 인라인 이벤트 리스너의 JS 에러 방지
-        const safeLinkUrl = item.link.replace(/'/g, "\\'");
-        
         const cardHtml = `
-          <a href="#" onclick="safeOpenLink('${safeLinkUrl}', event); return false;" class="mobile-price-card ${isGold ? 'gold-rank' : ''}">
+          <a href="${item.link}" target="_blank" rel="noopener noreferrer" class="mobile-price-card ${isGold ? 'gold-rank' : ''}">
             <div class="card-thumb-wrapper">
               ${item.imageUrl ? `<img src="${item.imageUrl}" class="card-thumb" alt="Product">` : `<span class="card-thumb-placeholder">${fallbackIcon}</span>`}
             </div>
