@@ -1078,14 +1078,16 @@
         </div>
 
         <div class="modal-body">
-          <p class="modal-instruction">스마트폰 단독으로 실시간 이미지 인식 및 최저가 검색을 수행하기 위한 API 인증키를 설정합니다. 비워둘 경우 스마트한 모형(Mock) 테스팅이 제공됩니다.</p>
+          <p class="modal-instruction">스마트폰 단독으로 실시간 이미지 인식 및 최저가 검색을 수행하기 위한 API 인증키를 설정합니다. 비워둘 경우 스마트한 모형(Mock) 테스팅이
+            제공됩니다.</p>
 
           <div class="input-group" style="margin-top: 10px;">
             <label>Gemini API Key (Google AI Studio)</label>
             <input type="text" id="setting-gemini-key" placeholder="AIzaSyA...">
             <span class="input-guide">
               * 발급 경로: <a href="https://aistudio.google.com/app/apikey" target="_blank"
-                style="color: var(--accent-blue); text-decoration: none;">Google AI Studio</a> 접속 후 API 키 생성. (멀티모달 이미지 분석 및 대화형 검색 정제에 사용)
+                style="color: var(--accent-blue); text-decoration: none;">Google AI Studio</a> 접속 후 API 키 생성. (멀티모달 이미지
+              분석 및 대화형 검색 정제에 사용)
             </span>
           </div>
 
@@ -1584,15 +1586,15 @@
             }
             logDiagnostic("📸 Gemini 멀티모달 분석 성공: " + detectedKeyword, 'success');
           } catch (geminiErr) {
-            console.warn("[최저가집사] Gemini 멀티모달 분석 실패. 모형 데이터로 대체합니다:", geminiErr);
-            detectedKeyword = "";
+            console.warn("[최저가집사] Gemini 멀티모달 분석 실패:", geminiErr);
+            throw new Error(`이미지 분석 실패: ${geminiErr.message || 'Gemini API 호출 중 장애가 발생했습니다.'}`);
           }
+        } else {
+          throw new Error("Gemini API 키가 입력되지 않았습니다. 설정창에서 입력해 주세요.");
         }
 
         if (!detectedKeyword) {
-          console.warn("[최저가집사] API 키가 없거나 분석에 실패하여 데모 시뮬레이션 데이터를 공급합니다.");
-          await new Promise(r => setTimeout(r, 1500));
-          detectedKeyword = "농심 신라면 120g 5개입 멀티팩";
+          throw new Error("이미지 분석 실패: 이미지에서 핵심 상품명을 추출하지 못했습니다. 설정에서 Gemini API Key를 확인하시거나 다른 사진으로 다시 시도해 주세요.");
         }
 
         const normalized = normalizeKeyword(detectedKeyword);
@@ -1955,6 +1957,7 @@
       try {
         let fetchedItems = [];
         isMockDataUsed = false;
+        let isApiConnectionSuccessful = false;
 
         // ── 1단계: 검색어 분석 ─────────────────────────────────────────
         // '밴드', '패치' 등 카테고리 형태 명사 = 검색 범위만 좁히고 핵심 특정력은 없음 → genericWords 처리
@@ -1997,6 +2000,7 @@
             });
 
             if (response.ok) {
+              isApiConnectionSuccessful = true;
               const data = await response.json();
               fetchedItems = (data.items || []).map(item => ({
                 platform: item.mallName || '네이버',
@@ -2027,6 +2031,7 @@
             const clientSecretParam = isValidKey(naverClientSecret) ? `&naverClientSecret=${encodeURIComponent(naverClientSecret)}` : '';
             const res = await fetch(`${activeBackend}/search?keyword=${encodeURIComponent(broadSearchKeyword)}${clientIdParam}${clientSecretParam}`);
             if (res.ok) {
+              isApiConnectionSuccessful = true;
               const data = await res.json();
               fetchedItems = data.results || [];
               logDiagnostic(`✅ 백엔드 중계 성공! 후보군 ${fetchedItems.length}개 수집.`, 'success');
@@ -2061,6 +2066,11 @@
             return true;
           });
           logDiagnostic(`🎯 2차 정밀 검수: 후보 ${before}개 → 정밀 매칭 ${fetchedItems.length}개 (오매칭 차단 완료)`, 'info');
+        }
+
+        if (!isApiConnectionSuccessful && fetchedItems.length === 0) {
+          logDiagnostic('❌ 데이터 수집 완전히 실패 (API 키 누락/오류 및 백엔드 오프라인)', 'error');
+          throw new Error("데이터 수집 실패: 실시간 최저가 API 키가 누락/오류이거나 백엔드 서버가 오프라인 상태입니다. 설정창에서 Naver API Key 또는 서버 주소를 다시 확인해 주세요.");
         }
 
         if (fetchedItems.length === 0) {
@@ -2204,7 +2214,7 @@
         // AI가 Function Calling을 호출했는지 검사
         if (part?.functionCall && part.functionCall.name === "searchPrice") {
           const refinedKeyword = part.functionCall.args.searchKeyword.trim();
-          
+
           responseBox.className = 'ai-chat-response';
           responseBox.textContent = `🔍 "${refinedKeyword}" 로 재검색합니다...`;
 
