@@ -742,8 +742,8 @@
 </head>
 <body>
 
-  <!-- HTML5 Native 디바이스 숨김 파일 입력 단자 (최고의 호환성을 위해 표준 이미지 입력 매핑) -->
-  <input type="file" id="camera-file-input" accept="image/*" style="display: none;">
+  <!-- HTML5 Native 디바이스 숨김 파일 입력 단자 (표준 모바일 브라우저에서 카메라 즉시 팝업 연동) -->
+  <input type="file" id="camera-file-input" accept="image/*" capture="environment" style="display: none;">
   <input type="file" id="gallery-file-input" accept="image/*" style="display: none;">
 
   <div class="app-container">
@@ -1004,11 +1004,13 @@
       settingNaverSecret.value = naverClientSecret;
       settingBackendUrl.value = backendUrl;
 
-      // 인앱 브라우저 감지 및 배너 노출
+      // 인앱 브라우저 감지, 배너 노출, 그리고 웹뷰 호환성 대응 (capture 속성 제거하여 안전한 파일 선택 유도)
       const userAgent = navigator.userAgent.toLowerCase();
       const isInAppBrowser = /kakaotalk|naver|line|daum|webview|inapp/i.test(userAgent);
       if (isInAppBrowser) {
         document.getElementById('inapp-warning-banner').style.display = 'flex';
+        cameraFileInput.removeAttribute('capture');
+        console.log("[최저가집사] 인앱 브라우저로 감지되어 capture 속성을 제거하고 안전 선택 모드로 전환했습니다.");
       }
       
       updateStatusUi();
