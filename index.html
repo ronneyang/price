@@ -1447,55 +1447,25 @@
             
             let resolvedUrl = url;
             
-            // 1. RedirectCheck.org API 및 unshorten.me API를 활용하여 0.3초만에 단축 주소의 실제 가리키는 URL 획득 (CORS 완벽 우회 & 무한 무료)
+            // 1. unshorten.me API를 활용하여 0.5초만에 단축 주소의 실제 가리키는 URL 획득 (CORS 우회 필터링)
             if (url.includes("link.coupang.com")) {
               logDiagnostic("🔗 단축 주소 고속 해제 엔진을 가동합니다...", 'info');
-              let unshortenedSuccess = false;
+              let unshortenData = null;
               
-              // 1-A. RedirectCheck.org 공식 API 시도 (우선순위 1위: 무한 무료, CORS 완벽 지원, 0.3초 완성!)
+              // 1-A. codetabs 초고속 프록시 채널 시도
               try {
-                const redirectRes = await fetch("https://www.redirectcheck.org/api/check", {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ url: url, method: 'GET', followMetaRefresh: true })
-                });
-                if (redirectRes.ok) {
-                  const redirectData = await redirectRes.json();
-                  if (redirectData && redirectData.redirects && redirectData.redirects.length > 0) {
-                    resolvedUrl = redirectData.redirects[0].to;
-                    unshortenedSuccess = true;
-                    logDiagnostic("🎯 1차 목적지 해제 성공! 상세 주소 획득 완료 (RedirectCheck).", 'info');
-                  } else if (redirectData && redirectData.final_result && redirectData.final_result.final_url) {
-                    resolvedUrl = redirectData.final_result.final_url;
-                    unshortenedSuccess = true;
-                    logDiagnostic("🎯 1차 목적지 해제 성공! 상세 주소 획득 완료 (RedirectCheck).", 'info');
-                  }
+                const unshortenUrl = `https://unshorten.me/json/${encodeURIComponent(url)}`;
+                const proxyUnshorten = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(unshortenUrl)}`;
+                const unshortenRes = await fetch(proxyUnshorten);
+                if (unshortenRes.ok) {
+                  unshortenData = await unshortenRes.json();
                 }
-              } catch (redirectErr) {
-                console.warn("unshorten via redirectcheck failed:", redirectErr);
+              } catch (codetabsErr) {
+                console.warn("unshorten via codetabs failed:", codetabsErr);
               }
               
-              // 1-B. 실패 시 unshorten.me + codetabs 프록시 백업 가동
-              if (!unshortenedSuccess) {
-                try {
-                  const unshortenUrl = `https://unshorten.me/json/${encodeURIComponent(url)}`;
-                  const proxyUnshorten = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(unshortenUrl)}`;
-                  const unshortenRes = await fetch(proxyUnshorten);
-                  if (unshortenRes.ok) {
-                    const unshortenData = await unshortenRes.json();
-                    if (unshortenData && unshortenData.success && unshortenData.resolved_url) {
-                      resolvedUrl = unshortenData.resolved_url;
-                      unshortenedSuccess = true;
-                      logDiagnostic("🎯 1차 목적지 해제 성공! 상세 주소 획득 완료 (Unshorten-Codetabs).", 'info');
-                    }
-                  }
-                } catch (codetabsErr) {
-                  console.warn("unshorten via codetabs failed:", codetabsErr);
-                }
-              }
-              
-              // 1-C. 최후 실패 시 allorigins 백업 채널 가동
-              if (!unshortenedSuccess) {
+              // 1-B. 실패 시 allorigins 백업 채널 가동
+              if (!unshortenData) {
                 try {
                   logDiagnostic("🔄 기본 프록시 지연 감지. 백업 채널(AllOrigins)로 우회합니다...", 'info');
                   const unshortenUrl = `https://unshorten.me/json/${encodeURIComponent(url)}`;
@@ -1503,16 +1473,16 @@
                   const unshortenRes = await fetch(proxyUnshorten);
                   if (unshortenRes.ok) {
                     const json = await unshortenRes.json();
-                    const unshortenData = JSON.parse(json.contents);
-                    if (unshortenData && unshortenData.success && unshortenData.resolved_url) {
-                      resolvedUrl = unshortenData.resolved_url;
-                      unshortenedSuccess = true;
-                      logDiagnostic("🎯 1차 목적지 해제 성공! 상세 주소 획득 완료 (Unshorten-AllOrigins).", 'info');
-                    }
+                    unshortenData = JSON.parse(json.contents);
                   }
                 } catch (allOriginsErr) {
                   console.warn("unshorten via allorigins failed:", allOriginsErr);
                 }
+              }
+              
+              if (unshortenData && unshortenData.success && unshortenData.resolved_url) {
+                resolvedUrl = unshortenData.resolved_url;
+                logDiagnostic("🎯 1차 목적지 해제 성공! 상세 주소 획득 완료.", 'info');
               }
             }
 
@@ -1654,15 +1624,42 @@
       try {
         let fetchedItems = [];
         isMockDataUsed = false;
-        logDiagnostic("🔍 '" + searchKeyword + "' 최저가 실시간 조사를 가동합니다...", 'info');
 
+        // ── 1단계: 검색어 분석 ─────────────────────────────────────────
+        // '밴드', '패치' 등 카테고리 형태 명사 = 검색 범위만 좁히고 핵심 특정력은 없음 → genericWords 처리
+        const genericWords = [
+          '남녀공용', '남성용', '여성용', '공용', '샌들', '슬리퍼', '신발', '슈즈', '아쿠아', '운동화', '슬링백', '스니커즈', '단화',
+          '샴푸', '린스', '염색', '새치', '에센스', '오일', '로션', '바디', '워시', '폼클렌징', '화장품', '기초',
+          '1개', '2개', '3개', '1팩', '2팩', '3팩', '묶음', '증정', '사은품', '패키지', '박스', '캔', '병', '개입',
+          '밴드', '패치', '시트', '연고', '크림', '젤', '필름', '스티커', '세트', '팩'
+        ];
+
+        const keywordWords = searchKeyword.split(/[\s\-_]+/).filter(w => w.length >= 2);
+        let broadSearchKeyword = searchKeyword;
+        let brandWord = '';
+        let specificWords = [];
+
+        if (keywordWords.length > 0) {
+          brandWord = keywordWords[0].toLowerCase();
+          // genericWords에 속하지 않는 단어들만 핵심 식별어(specificWords)로 분류
+          specificWords = keywordWords.slice(1).filter(w => {
+            return !genericWords.includes(w.toLowerCase());
+          });
+          // API 검색 쿼리: 브랜드명 + 1차 핵심 식별어만으로 넓게 검색 (네이버 0건 방지)
+          broadSearchKeyword = specificWords.length > 0
+            ? `${keywordWords[0]} ${specificWords[0]}`
+            : keywordWords[0];
+        }
+
+        logDiagnostic(`🔍 API 쿼리: '${broadSearchKeyword}' (원본: '${searchKeyword}')`, 'info');
+        logDiagnostic('🩺 실시간 최저가 조사를 가동합니다...', 'info');
+
+        // ── 네이버 OpenAPI 직접 호출 (broad query) ─────────────────────
         if (isValidKey(naverClientId) && isValidKey(naverClientSecret)) {
           try {
-            logDiagnostic("🔑 입력된 네이버 API 키 감지됨. CORS 우회 프록시 직접 연동을 시도합니다...", 'info');
-            // 네이버 쇼핑 OpenAPI 실시간 기기 다이렉트 통신 (CORS bypass/WebView 대응)
-            const query = encodeURIComponent(searchKeyword);
-            const targetUrl = `https://openapi.naver.com/v1/search/shop.json?query=${query}&display=15&sort=asc`;
-            // 브라우저 CORS 제약을 완벽히 우회하기 위해 안정적인 corsproxy.io 우회 터널 결합
+            logDiagnostic('🔑 네이버 API 직접 연동을 시도합니다...', 'info');
+            const query = encodeURIComponent(broadSearchKeyword);
+            const targetUrl = `https://openapi.naver.com/v1/search/shop.json?query=${query}&display=30&sort=asc`;
             const url = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
 
             const response = await fetch(url, {
@@ -1676,94 +1673,81 @@
               const data = await response.json();
               fetchedItems = (data.items || []).map(item => ({
                 platform: item.mallName || '네이버',
-                title: item.title.replace(/<[^>]+>/g, ''), // HTML 태그 제거
+                title: item.title.replace(/<[^>]+>/g, ''),
                 price: parseInt(item.lprice, 10) || 0,
                 shippingFee: 0,
                 link: item.link,
                 imageUrl: item.image
               }));
-              logDiagnostic("✅ 네이버 API 직접 호출 성공! 실제 상품 데이터 " + fetchedItems.length + "개 매칭 완료.", 'success');
+              logDiagnostic(`✅ 네이버 API 성공! 후보군 ${fetchedItems.length}개 수집.`, 'success');
             } else {
-              const errText = await response.text();
-              logDiagnostic("❌ 네이버 API 호출 거절됨 (HTTP " + response.status + ").", 'error');
-              logDiagnostic("💡 [원인 파악] 네이버 콘솔 '웹 설정'에 'https://ronneyang.github.io' 도메인이 누락되었는지 체크해 보세요!", 'warn');
+              logDiagnostic(`❌ 네이버 API 거절 (HTTP ${response.status}).`, 'error');
             }
           } catch (naverErr) {
-            console.warn("[최저가집사] 네이버 OpenAPI 브라우저 직접 호출 실패(CORS 등):", naverErr);
-            logDiagnostic("❌ 네이버 API 통신 장애 (CORS 또는 네트워크 블록): " + naverErr.message, 'error');
+            console.warn('[최저가집사] 네이버 OpenAPI 실패:', naverErr);
+            logDiagnostic('❌ 네이버 API 통신 장애: ' + naverErr.message, 'error');
           }
         } else {
-          logDiagnostic("⚠️ 설정창에 Naver API 키가 입력되지 않았거나 유효하지 않습니다. (5자 미만 또는 Dummy 키)", 'warn');
+          logDiagnostic('⚠️ Naver API 키 없음. 백엔드 중계를 시도합니다.', 'warn');
         }
 
+        // ── 백엔드 폴백 ────────────────────────────────────────────────
         if (fetchedItems.length === 0) {
-          // 로컬 백엔드 서버 조회 시도 (네이버 API 키를 백엔드로 전달하도록 파라미터 매핑 보완)
           try {
             const activeBackend = getActiveBackendUrl();
-            logDiagnostic("🔄 로컬 백엔드 서버(" + activeBackend + ")에 CORS 안심 중계 요청을 시도합니다...", 'info');
+            logDiagnostic(`🔄 백엔드(${activeBackend})에 중계 요청을 시도합니다...`, 'info');
             const clientIdParam = isValidKey(naverClientId) ? `&naverClientId=${encodeURIComponent(naverClientId)}` : '';
             const clientSecretParam = isValidKey(naverClientSecret) ? `&naverClientSecret=${encodeURIComponent(naverClientSecret)}` : '';
-            const res = await fetch(`${activeBackend}/search?keyword=${encodeURIComponent(searchKeyword)}${clientIdParam}${clientSecretParam}`);
+            const res = await fetch(`${activeBackend}/search?keyword=${encodeURIComponent(broadSearchKeyword)}${clientIdParam}${clientSecretParam}`);
             if (res.ok) {
               const data = await res.json();
               fetchedItems = data.results || [];
-              logDiagnostic("✅ 백엔드 중계 성공! " + fetchedItems.length + "개 상품 수집 완료.", 'success');
+              logDiagnostic(`✅ 백엔드 중계 성공! 후보군 ${fetchedItems.length}개 수집.`, 'success');
             } else {
-              const errText = await res.text();
-              console.warn(`[최저가집사] 백엔드 검색 요청 실패: ${res.status} - ${errText}`);
-              logDiagnostic("❌ 백엔드 응답 에러 (HTTP " + res.status + "): " + errText, 'error');
+              logDiagnostic(`❌ 백엔드 응답 에러 (HTTP ${res.status})`, 'error');
             }
           } catch (e) {
-            console.log("[최저가집사] 백엔드가 오프라인이거나 통신 에러가 발생하여 고품격 Mock 비교 데이터로 우회합니다:", e);
-            logDiagnostic("❌ 백엔드 통신 실패 (백엔드 서버 오프라인 또는 HTTPS Mixed Content 블록): " + e.message, 'error');
+            logDiagnostic('❌ 백엔드 오프라인 또는 HTTPS 블록: ' + e.message, 'error');
           }
+        }
+
+        // ── 2단계: 앱 내부 초정밀 2차 검수 (오매칭 원천 차단) ──────────
+        // 넓게 가져온 후보군 중, 원본 핵심 식별어가 없는 엉뚱한 제품을 제거
+        if (brandWord && fetchedItems.length > 0) {
+          const before = fetchedItems.length;
+          fetchedItems = fetchedItems.filter(item => {
+            const t = item.title.toLowerCase();
+            const tNoSp = t.replace(/\s+/g, ''); // 띄어쓰기 무력화 (예: 하이드로콜로이드 = 하이드로 콜로이드)
+
+            // A. 브랜드명 필수 포함
+            if (!t.includes(brandWord) && !tNoSp.includes(brandWord)) return false;
+
+            // B. 핵심 식별어 최소 1개 포함 (specificWords 기준)
+            if (specificWords.length > 0) {
+              const match = specificWords.some(w => {
+                const sw = w.toLowerCase();
+                return t.includes(sw) || tNoSp.includes(sw);
+              });
+              if (!match) return false;
+            }
+
+            return true;
+          });
+          logDiagnostic(`🎯 2차 정밀 검수: 후보 ${before}개 → 정밀 매칭 ${fetchedItems.length}개 (오매칭 차단 완료)`, 'info');
         }
 
         if (fetchedItems.length === 0) {
-          logDiagnostic("ℹ️ 실시간 매칭 상품이 검색되지 않았습니다. 결과 없음 화면을 렌더링합니다.", 'warn');
+          logDiagnostic('ℹ️ 매칭되는 상품이 없습니다.', 'warn');
         }
 
-        // PC 버전 background.js의 핵심 브랜드 및 모델명 정밀 필터링 이식
-        if (searchKeyword && fetchedItems.length > 0) {
-          const keywordWords = searchKeyword.split(/[\s\-_]+/).filter(w => w.length >= 2);
-          if (keywordWords.length > 0) {
-            const brandWord = keywordWords[0].toLowerCase();
-            const genericWords = [
-              '남녀공용', '남성용', '여성용', '공용', '샌들', '슬리퍼', '신발', '슈즈', '아쿠아', '운동화', '슬링백', '스니커즈', '단화',
-              '샴푸', '린스', '염색', '새치', '케어', '에센스', '오일', '크림', '로션', '바디', '워시', '폼클렌징', '화장품', '기초', '세트',
-              '1개', '2개', '3개', '1팩', '2팩', '3팩', '묶음', '세트', '증정', '사은품', '패키지', '박스'
-            ];
-            
-            const specificWords = keywordWords.slice(1).filter(w => {
-              const wLower = w.toLowerCase();
-              return wLower !== brandWord && !genericWords.includes(wLower);
-            });
-
-            fetchedItems = fetchedItems.filter(item => {
-              const titleLower = item.title.toLowerCase();
-              
-              // 1. 브랜드명 필수 매칭 (예: '펩시', '농심' 등)
-              if (!titleLower.includes(brandWord)) return false;
-              
-              // 2. 모델명/모델코드 조건부 매칭 (검색어에 모델 지칭어가 존재할 경우 최소 하나 포함)
-              if (specificWords.length > 0) {
-                return specificWords.some(specWord => titleLower.includes(specWord.toLowerCase()));
-              }
-              
-              return true;
-            });
-          }
-        }
-
-        // 전체 총합 가격순 오름차순 정렬
         results = fetchedItems.sort((a, b) => (a.price + a.shippingFee) - (b.price + b.shippingFee));
         status = 'DONE';
         updateStatusUi();
 
       } catch (err) {
-        console.error("Pricing Flow Error:", err);
+        console.error('Pricing Flow Error:', err);
         status = 'ERROR';
-        errorMessage = err.message || "온라인 최저가를 검색하고 가져오는 과정에서 통신 오류가 생겼습니다.";
+        errorMessage = err.message || '온라인 최저가를 검색하고 가져오는 과정에서 통신 오류가 생겼습니다.';
         updateStatusUi();
       }
     }
