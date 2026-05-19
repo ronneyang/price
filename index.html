@@ -1352,6 +1352,30 @@
       await runUrlMetadataDetection(url);
     });
 
+    // 흔히 발생하는 모바일 카메라 촬영 OCR 오인식 및 브랜드 약어 지능형 교정 사전
+    function normalizeKeyword(rawKeyword) {
+      if (!rawKeyword) return "";
+      let kw = rawKeyword.trim().toLowerCase();
+      
+      const correctionMap = {
+        'peps': '펩시 Pepsi',
+        'pepsi': '펩시 Pepsi',
+        'coca': '코카콜라 Coca-Cola',
+        'coke': '코카콜라 Coca-Cola',
+        'chilsung': '칠성사이다',
+        'shin': '신라면',
+        'jin': '진라면',
+        'samyang': '삼양라면'
+      };
+
+      for (const [key, value] of Object.entries(correctionMap)) {
+        if (kw === key || kw.includes(key)) {
+          return value;
+        }
+      }
+      return rawKeyword;
+    }
+
     // ── 핵심 AI 비전 키워드 추출 & 실시간 최저가 탐색 스크립트 ──
     async function runAiDetection(base64Image) {
       status = 'ANALYZING';
@@ -1414,11 +1438,12 @@
           detectedKeyword = "농심 신라면 120g 5개입 멀티팩";
         }
 
-        keyword = detectedKeyword;
+        const normalized = normalizeKeyword(detectedKeyword);
+        keyword = normalized;
         status = 'SEARCHING';
         updateStatusUi();
 
-        await performPriceSearch(detectedKeyword);
+        await performPriceSearch(normalized);
 
       } catch (err) {
         console.error("AI Detection Error:", err);
