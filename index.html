@@ -947,6 +947,7 @@
     let keyword = '';
     let results = [];
     let errorMessage = '';
+    let isMockDataUsed = false;
 
     // API 키 관리 및 백엔드 서버 설정
     let visionApiKey = localStorage.getItem('visionApiKey') || '';
@@ -1398,6 +1399,7 @@
     async function performPriceSearch(searchKeyword) {
       try {
         let fetchedItems = [];
+        isMockDataUsed = false;
         logDiagnostic("🔍 '" + searchKeyword + "' 최저가 실시간 조사를 가동합니다...", 'info');
 
         if (isValidKey(naverClientId) && isValidKey(naverClientSecret)) {
@@ -1464,6 +1466,7 @@
         }
 
         if (fetchedItems.length === 0) {
+          isMockDataUsed = true;
           logDiagnostic("🚨 실시간 통신 수집이 제한되어 시뮬레이션 데모 데이터 모드로 자동 우회 작동합니다.", 'warn');
           // 데모용 고품질 최저가 카드 리스트 제공 (API 키 미설정 시의 시뮬레이션 모드)
           await new Promise(r => setTimeout(r, 1200));
@@ -1607,8 +1610,22 @@
     function renderResultsList() {
       resultsPriceListBox.innerHTML = '';
       
+      // 만약 실제 결과가 없어 시뮬레이션 데이터를 공급받았을 경우, 고급 안내 배너 노출
+      if (isMockDataUsed) {
+        resultsPriceListBox.innerHTML += `
+          <div class="mock-warning-banner" style="background: rgba(255, 159, 67, 0.08); border: 1px dashed rgba(255, 159, 67, 0.25); border-radius: 12px; padding: 12px; margin-bottom: 16px; font-size: 11px; color: #ff9f43; line-height: 1.6; text-align: left; display: flex; align-items: flex-start; gap: 8px;">
+            <span style="font-size: 15px; margin-top: 1px;">⚠️</span>
+            <div>
+              <strong style="color: #ff9f43; font-size: 12px;">데모 시뮬레이션 모드 가동 중</strong><br>
+              네이버 쇼핑 API에서 <strong>'${keyword}'</strong>에 실시간 매칭되는 온라인 일반 판매 상품이 없어 예시(시뮬레이션) 카드로 표시하고 있습니다.<br>
+              <span style="color: #a9b1d6;">(💡 주변의 펩시 캔, 신라면, 새우깡 등 일반 소매점 판매 상품으로 교체해 테스트해보시면 진짜 실시간 데이터가 100% 매칭되어 작동합니다!)</span>
+            </div>
+          </div>
+        `;
+      }
+      
       if (results.length === 0) {
-        resultsPriceListBox.innerHTML = `<div class="empty-results">😔 매칭되는 온라인 쇼핑몰 최저가를 찾지 못했습니다.</div>`;
+        resultsPriceListBox.innerHTML += `<div class="empty-results">😔 매칭되는 온라인 쇼핑몰 최저가를 찾지 못했습니다.</div>`;
         return;
       }
 
