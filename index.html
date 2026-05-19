@@ -126,259 +126,122 @@
       transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    .segment-btn.active {
-      background: var(--glass-card);
-      color: #fff;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
     /* ── 메인 컨텐츠 영역 ── */
     .main-content {
       flex: 1;
       display: flex;
       flex-direction: column;
       position: relative;
-      margin-bottom: 120px; /* 바텀시트 가림 방지 */
-    }
-
-    .tab-pane {
-      display: none;
-      width: 100%;
-      height: 100%;
-    }
-
-    .tab-pane.active {
-      display: flex;
-      flex-direction: column;
-    }
-
-    /* [모드 1] 카메라 뷰 */
-    .camera-view {
-      flex: 1;
-      background-color: #000;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .camera-placeholder {
-      color: var(--text-muted);
-      font-size: 1.2rem;
-      text-align: center;
-      position: relative;
-      width: 100%;
-      height: 100%;
-      z-index: 2;
-    }
-
-    #camera-stream-video {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      z-index: 1;
-      display: block;
-      background: #000;
-    }
-
-    .camera-image {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      opacity: 0.85;
-      display: none;
-      z-index: 3;
-      position: absolute;
-      top: 0;
-      left: 0;
-    }
-
-    /* 스캐너 프레임 & 코너 가이드 */
-    .scanner-frame {
-      position: absolute;
-      top: 40%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 260px;
-      height: 260px;
-      border-radius: 16px;
-      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.65);
-    }
-
-    .scanner-line {
-      position: absolute;
-      width: 100%;
-      height: 3px;
-      background: var(--accent-blue);
-      box-shadow: 0 0 12px var(--accent-blue);
-      animation: scan 2.2s linear infinite;
-    }
-
-    .scanner-corner {
-      position: absolute;
-      width: 24px;
-      height: 24px;
-      border: 4px solid var(--accent-blue);
-    }
-
-    .scanner-corner.tl { top: 0; left: 0; border-right: none; border-bottom: none; border-radius: 12px 0 0 0; }
-    .scanner-corner.tr { top: 0; right: 0; border-left: none; border-bottom: none; border-radius: 0 12px 0 0; }
-    .scanner-corner.bl { bottom: 0; left: 0; border-right: none; border-top: none; border-radius: 0 0 0 12px; }
-    .scanner-corner.br { bottom: 0; right: 0; border-left: none; border-top: none; border-radius: 0 0 12px 0; }
-
-    .scanner-instruction {
-      position: absolute;
-      bottom: 12%;
-      left: 5%;
-      right: 5%;
-      color: var(--text-muted);
-      font-size: 12px;
-      line-height: 1.5;
-      text-align: center;
+      margin-bottom: 20px; /* 바텀시트 숨김에 맞춰서 최적화 */
       padding: 0 16px;
     }
 
-    @keyframes scan {
-      0% { top: 0; }
-      50% { top: 100%; }
-      100% { top: 0; }
-    }
-
-    /* [모드 2] 갤러리 업로드 뷰 */
-    .gallery-view {
-      flex: 1;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 24px;
-    }
-
-    .upload-trigger-container {
-      width: 100%;
-      max-width: 340px;
-      background: var(--glass-card);
-      border: 2px dashed var(--glass-border);
-      border-radius: 20px;
-      padding: 36px 24px;
-      text-align: center;
-      cursor: pointer;
-      transition: border-color 0.2s, background 0.2s;
-    }
-
-    .upload-trigger-container:active {
-      border-color: var(--accent-blue);
-      background: rgba(59, 130, 246, 0.05);
-    }
-
-    .upload-icon-wrapper {
-      font-size: 48px;
-      margin-bottom: 16px;
-    }
-
-    .upload-trigger-container h3 {
-      font-size: 15px;
-      font-weight: 700;
-      color: #fff;
-      margin-bottom: 8px;
-    }
-
-    .upload-trigger-container p {
-      font-size: 11px;
-      color: var(--text-muted);
-      line-height: 1.6;
-      margin-bottom: 24px;
-    }
-
-    .upload-btn {
-      background: var(--accent-blue);
-      color: #fff;
-      font-weight: 700;
-      font-size: 13px;
-      padding: 10px 24px;
-      border-radius: 8px;
-      border: none;
-      cursor: pointer;
-    }
-
-    .image-preview-card {
-      width: 100%;
-      max-width: 320px;
-      border-radius: 16px;
-      overflow: hidden;
-      background: #000;
-      border: 1px solid var(--glass-border);
-      position: relative;
-      display: none;
-    }
-
-    .preview-image {
-      width: 100%;
-      height: 280px;
-      object-fit: cover;
-      opacity: 0.9;
-    }
-
-    .preview-badge {
-      position: absolute;
-      top: 12px;
-      left: 12px;
-      background: var(--primary-color);
-      color: #fff;
-      font-size: 10px;
-      font-weight: 700;
-      padding: 4px 10px;
-      border-radius: 20px;
-    }
-
-    /* [모드 3] 상세 링크 입력 뷰 */
-    .link-view {
-      flex: 1;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 24px;
-    }
-
-    .url-card-container {
-      width: 100%;
-      max-width: 340px;
-      background: var(--glass-card);
-      border: 1px solid var(--glass-border);
-      border-radius: 20px;
-      padding: 24px;
+    /* ── 대시보드 그리드 및 카드 스타일 ── */
+    .dashboard-container {
       display: flex;
       flex-direction: column;
       gap: 16px;
+      padding: 8px 0;
     }
 
-    .url-card-header h3 {
-      font-size: 16px;
+    .dashboard-card {
+      position: relative;
+      background: rgba(22, 27, 34, 0.4);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 18px;
+      cursor: pointer;
+      overflow: hidden;
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s;
+    }
+
+    .dashboard-card:active {
+      transform: scale(0.97);
+    }
+
+    .dashboard-card:hover {
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    /* 카드 무드등 그라디언트 효과 */
+    .card-glow-bg {
+      position: absolute;
+      top: -50%;
+      left: -20%;
+      width: 140%;
+      height: 200%;
+      opacity: 0.08;
+      filter: blur(40px);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .card-glow-bg.blue {
+      background: radial-gradient(circle, var(--accent-blue) 0%, transparent 60%);
+    }
+
+    .card-glow-bg.emerald {
+      background: radial-gradient(circle, var(--price-green) 0%, transparent 60%);
+    }
+
+    .card-glow-bg.purple {
+      background: radial-gradient(circle, #8a2be2 0%, transparent 60%);
+    }
+
+    .dashboard-card .card-content {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      z-index: 2;
+    }
+
+    .dashboard-card .card-icon {
+      font-size: 28px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--glass-border);
+      width: 54px;
+      height: 54px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    }
+
+    .dashboard-card .card-text-group {
+      flex: 1;
+    }
+
+    .dashboard-card h3 {
+      font-size: 14px;
       font-weight: 700;
       color: #fff;
-      margin-top: 8px;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
     }
 
-    .url-card-header p {
+    .dashboard-card p {
       font-size: 11px;
       color: var(--text-muted);
-      line-height: 1.5;
+      line-height: 1.4;
     }
 
-    .card-badge {
-      background: rgba(59, 130, 246, 0.15);
-      color: var(--accent-blue);
-      font-size: 9px;
-      font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+    /* 링크 입력 전용 슬라이드 패널 */
+    .dashboard-url-pane {
+      background: rgba(22, 27, 34, 0.6);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     .url-input-wrapper {
@@ -431,9 +294,61 @@
       cursor: not-allowed;
     }
 
+    /* 이미지 선택 프리미엄 미리보기 카드 */
+    .selected-preview-area {
+      background: rgba(46, 160, 67, 0.05);
+      border: 1px dashed rgba(46, 160, 67, 0.35);
+      border-radius: 16px;
+      padding: 12px;
+      animation: fadeIn 0.3s ease;
+      margin-top: 8px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .preview-card-frame {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .preview-card-frame img {
+      width: 64px;
+      height: 64px;
+      border-radius: 12px;
+      object-fit: cover;
+      border: 1px solid var(--glass-border);
+      background: #0d1117;
+    }
+
+    .preview-card-info {
+      flex: 1;
+    }
+
+    .preview-badge {
+      display: inline-block;
+      font-size: 9px;
+      font-weight: 700;
+      background: rgba(46, 160, 67, 0.2);
+      color: var(--price-green);
+      padding: 2px 8px;
+      border-radius: 20px;
+      margin-bottom: 4px;
+    }
+
+    .preview-card-info p {
+      font-size: 11px;
+      color: var(--text-main);
+      font-weight: 600;
+    }
+
+    /* ── 하단 바텀 시트 ── */
     /* ── 하단 바텀 시트 ── */
     .bottom-sheet {
-      background: rgba(22, 27, 34, 0.9);
+      background: rgba(22, 27, 34, 0.95);
       backdrop-filter: blur(25px);
       -webkit-backdrop-filter: blur(25px);
       border-top: 1px solid var(--glass-border);
@@ -443,20 +358,20 @@
       bottom: 0;
       width: 100%;
       z-index: 200;
-      transform: translateY(100px); /* 셔터 컨테이너만 살짝 노출 */
-      height: 180px;
+      transform: translateY(100%); /* 완전히 숨김 상태 시작 */
+      height: 75vh;
       transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), height 0.4s cubic-bezier(0.16, 1, 0.3, 1);
       box-shadow: 0 -12px 40px rgba(0,0,0,0.65);
     }
 
     .bottom-sheet.expanded {
       transform: translateY(0);
-      height: 180px;
+      height: 200px;
     }
 
     .bottom-sheet.full-results {
-      height: 70vh;
       transform: translateY(0);
+      height: 75vh;
     }
 
     .sheet-drag-handle {
@@ -465,40 +380,6 @@
       background: rgba(255, 255, 255, 0.15);
       border-radius: 2px;
       margin: 0 auto 16px;
-    }
-
-    /* 셔터 캡처 버튼 */
-    .capture-action-container {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 90px;
-    }
-
-    .capture-trigger-btn {
-      width: 68px;
-      height: 68px;
-      border-radius: 50%;
-      background: var(--primary-color);
-      border: 4px solid rgba(255,255,255,0.25);
-      outline: 4px solid var(--primary-color);
-      outline-offset: 3px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: transform 0.1s;
-    }
-
-    .capture-trigger-btn:active {
-      transform: scale(0.92);
-    }
-
-    .capture-trigger-inner {
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      background: var(--primary-hover);
     }
 
     /* 로딩 상태 */
@@ -847,93 +728,86 @@
       <button class="settings-toggle-btn" id="open-settings-btn">⚙️ API 설정</button>
     </header>
 
-    <!-- ── 상단 3-Segment 탭 컨트롤 ── -->
-    <div class="tab-segment-control">
-      <button class="segment-btn active" data-tab="camera">📷 실시간 촬영</button>
-      <button class="segment-btn" data-tab="gallery">🖼️ 갤러리 업로드</button>
-      <button class="segment-btn" data-tab="link">🔗 상세 링크 입력</button>
-    </div>
-
     <!-- ── 메인 콘텐츠 패널 ── -->
     <main class="main-content">
       
-      <!-- [모드 1] 실시간 촬영 -->
-      <div class="tab-pane active" id="pane-camera">
-        <div class="camera-view" id="camera-view-box">
-          <video id="camera-stream-video" autoplay playsinline muted></video>
-          <div class="camera-placeholder" id="camera-placeholder-ui">
-            <div class="scanner-frame">
-              <div class="scanner-line"></div>
-              <div class="scanner-corner tl"></div>
-              <div class="scanner-corner tr"></div>
-              <div class="scanner-corner bl"></div>
-              <div class="scanner-corner br"></div>
+      <div class="dashboard-container">
+        
+        <!-- 1. 실시간 촬영 검색 카드 -->
+        <div class="dashboard-card" id="card-trigger-camera">
+          <div class="card-glow-bg blue"></div>
+          <div class="card-content">
+            <div class="card-icon">📸</div>
+            <div class="card-text-group">
+              <h3>실시간 촬영 검색</h3>
+              <p>스마트폰 기본 카메라로 초고화질 자동 초점 촬영을 수행하여 100% 완벽하게 제품을 인식합니다.</p>
             </div>
-            <p class="scanner-instruction">오프라인 상품의 라벨이나 전면을 프레임 안에 맞추고 아래 셔터를 누르세요</p>
-          </div>
-          <img src="" class="camera-image" id="camera-captured-preview" alt="Captured">
-        </div>
-      </div>
-
-      <!-- [모드 2] 갤러리 업로드 -->
-      <div class="tab-pane" id="pane-gallery">
-        <div class="gallery-view">
-          <div class="upload-trigger-container" id="gallery-trigger-box">
-            <div class="upload-icon-wrapper">🌄</div>
-            <h3>스마트폰 앨범에서 사진 가져오기</h3>
-            <p>갤러리에 저장된 상품 영수증, 캡처본 또는 직접 찍어둔 상품 사진을 선택하세요.</p>
-            <button class="upload-btn">사진 선택</button>
-          </div>
-          <div class="image-preview-card" id="gallery-preview-card">
-            <img src="" class="preview-image" id="gallery-preview-img" alt="Preview">
-            <span class="preview-badge">AI 분석 대기 완료</span>
           </div>
         </div>
-      </div>
 
-      <!-- [모드 3] 상세 링크 입력 -->
-      <div class="tab-pane" id="pane-link">
-        <div class="link-view">
-          <div class="url-card-container">
-            <div class="url-card-header">
-              <span class="card-badge">Coupang & Naver</span>
-              <h3>상세페이지 주소(URL)로 검색</h3>
-              <p>오프라인 몰에서 발견한 상품의 웹 상세 주소 링크가 있다면 아래에 붙여넣어 주세요.</p>
+        <!-- 2. 갤러리 업로드 검색 카드 -->
+        <div class="dashboard-card" id="card-trigger-gallery">
+          <div class="card-glow-bg emerald"></div>
+          <div class="card-content">
+            <div class="card-icon">🖼️</div>
+            <div class="card-text-group">
+              <h3>갤러리 업로드 검색</h3>
+              <p>저장해 둔 상품 사진, 스크린샷 캡처본 또는 바코드 영수증을 업로드하여 1원 단위 최저가를 추적합니다.</p>
             </div>
-            
-            <div class="url-input-wrapper">
-              <input 
-                type="text" 
-                class="url-input-field" 
-                id="url-input-field" 
-                placeholder="https://www.coupang.com/vp/products/..." 
-              />
-              <button class="clear-input-btn" id="clear-url-input-btn">&times;</button>
-            </div>
-
-            <button 
-              class="url-search-submit-btn" 
-              id="url-search-submit-btn" 
-              disabled
-            >
-              🧙‍♂️ 최저가집사 분석 시작
-            </button>
           </div>
         </div>
+
+        <!-- 3. 상세 링크 분석 카드 -->
+        <div class="dashboard-card" id="card-trigger-link">
+          <div class="card-glow-bg purple"></div>
+          <div class="card-content">
+            <div class="card-icon">🔗</div>
+            <div class="card-text-group">
+              <h3>상세 링크 분석</h3>
+              <p>쿠팡 또는 네이버 상품 상세페이지 인터넷 주소(URL)를 입력하여 실시간 가격순으로 즉시 정렬합니다.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 상세 링크 직접 입력 패널 (기본 숨김) -->
+        <div class="dashboard-url-pane" id="dashboard-url-pane" style="display: none;">
+          <div class="url-input-wrapper">
+            <input 
+              type="text" 
+              class="url-input-field" 
+              id="url-input-field" 
+              placeholder="https://www.coupang.com/vp/products/..." 
+            />
+            <button class="clear-input-btn" id="clear-url-input-btn">&times;</button>
+          </div>
+
+          <button 
+            class="url-search-submit-btn" 
+            id="url-search-submit-btn" 
+            disabled
+          >
+            🧙‍♂️ 최저가집사 분석 시작
+          </button>
+        </div>
+
+        <!-- 선택된 상품 미리보기 (카메라 촬영 또는 갤러리 선택 시 노출) -->
+        <div class="selected-preview-area" id="selected-preview-area" style="display: none;">
+          <div class="preview-card-frame">
+            <img src="" id="selected-preview-img" alt="Selected Preview">
+            <div class="preview-card-info">
+              <span class="preview-badge">✨ 초정밀 이미지 분석 대기 완료</span>
+              <p id="preview-filename-text">이미지 파일 분석 시작...</p>
+            </div>
+          </div>
+        </div>
+
       </div>
 
     </main>
 
     <!-- ── 하단 바텀 시트 ── -->
-    <div class="bottom-sheet expanded" id="price-bottom-sheet">
+    <div class="bottom-sheet" id="price-bottom-sheet">
       <div class="sheet-drag-handle"></div>
-
-      <!-- 모드 1 카메라 셔터 레이아웃 -->
-      <div class="capture-action-container" id="camera-shutter-container">
-        <button class="capture-trigger-btn" id="camera-shutter-btn">
-          <div class="capture-trigger-inner"></div>
-        </button>
-      </div>
 
       <!-- 로딩 상태 영역 -->
       <div class="loading-state" id="loading-state-ui">
@@ -1019,13 +893,11 @@
 
   <script>
     // ── 상태 관리 (State) ──
-    let activeTab = 'camera';
     let status = 'IDLE'; // IDLE, ANALYZING, SEARCHING, DONE, ERROR
     let photoUrl = null;
     let keyword = '';
     let results = [];
     let errorMessage = '';
-    let cameraStream = null; // WebRTC 카메라 스트림 변수
 
     // API 키 관리 및 백엔드 서버 설정
     let visionApiKey = localStorage.getItem('visionApiKey') || '';
@@ -1050,22 +922,22 @@
     }
 
     // DOM 요소 캐싱
-    const cameraStreamVideo = document.getElementById('camera-stream-video');
-    const tabBtns = document.querySelectorAll('.segment-btn');
-    const tabPanes = document.querySelectorAll('.tab-pane');
     const cameraFileInput = document.getElementById('camera-file-input');
     const galleryFileInput = document.getElementById('gallery-file-input');
-    const cameraPlaceholderUi = document.getElementById('camera-placeholder-ui');
-    const cameraCapturedPreview = document.getElementById('camera-captured-preview');
-    const galleryTriggerBox = document.getElementById('gallery-trigger-box');
-    const galleryPreviewCard = document.getElementById('gallery-preview-card');
-    const galleryPreviewImg = document.getElementById('gallery-preview-img');
     const urlInputField = document.getElementById('url-input-field');
     const clearUrlInputBtn = document.getElementById('clear-url-input-btn');
     const urlSearchSubmitBtn = document.getElementById('url-search-submit-btn');
     
+    const cardTriggerCamera = document.getElementById('card-trigger-camera');
+    const cardTriggerGallery = document.getElementById('card-trigger-gallery');
+    const cardTriggerLink = document.getElementById('card-trigger-link');
+    const dashboardUrlPane = document.getElementById('dashboard-url-pane');
+    
+    const selectedPreviewArea = document.getElementById('selected-preview-area');
+    const selectedPreviewImg = document.getElementById('selected-preview-img');
+    const previewFilenameText = document.getElementById('preview-filename-text');
+    
     const priceBottomSheet = document.getElementById('price-bottom-sheet');
-    const cameraShutterContainer = document.getElementById('camera-shutter-container');
     const loadingStateUi = document.getElementById('loading-state-ui');
     const loadingMessageText = document.getElementById('loading-message-text');
     const errorStateUi = document.getElementById('error-state-ui');
@@ -1083,40 +955,6 @@
     const settingNaverSecret = document.getElementById('setting-naver-secret');
     const settingBackendUrl = document.getElementById('setting-backend-url');
 
-    // ── 카메라 스트리밍 제어 (WebRTC) ──
-    async function startCameraStream() {
-      if (activeTab !== 'camera') return;
-      if (cameraStream) stopCameraStream();
-
-      try {
-        const constraints = {
-          video: {
-            facingMode: { ideal: 'environment' }
-          },
-          audio: false
-        };
-        cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
-        cameraStreamVideo.srcObject = cameraStream;
-        cameraStreamVideo.style.display = 'block';
-        cameraPlaceholderUi.style.display = 'block';
-        cameraCapturedPreview.style.display = 'none';
-      } catch (err) {
-        console.error('Camera stream access failed:', err);
-        // 사용자 권한 거부 시 파일 업로드 방식으로 자동 연계 대기
-        cameraStreamVideo.style.display = 'none';
-      }
-    }
-
-    function stopCameraStream() {
-      if (cameraStream) {
-        cameraStream.getTracks().forEach(track => track.stop());
-        cameraStream = null;
-      }
-      if (cameraStreamVideo) {
-        cameraStreamVideo.srcObject = null;
-      }
-    }
-
     // ── 초기화 로직 ──
     window.addEventListener('DOMContentLoaded', () => {
       // 로컬 스토리지 데이터 인풋 매핑
@@ -1126,17 +964,14 @@
       settingBackendUrl.value = backendUrl;
       
       updateStatusUi();
-      startCameraStream();
     });
 
     // ⚙️ 설정창 열고 닫기
     openSettingsBtn.addEventListener('click', () => {
-      stopCameraStream(); // 설정 창을 열면 카메라 일시 정지하여 전력 절약
       settingsBackdropUi.style.display = 'flex';
     });
     closeSettingsBtn.addEventListener('click', () => {
       settingsBackdropUi.style.display = 'none';
-      if (activeTab === 'camera') startCameraStream(); // 설정 닫으면 다시 실시간 카메라 재생
     });
     saveSettingsBtn.addEventListener('click', () => {
       visionApiKey = settingVisionKey.value.trim();
@@ -1151,33 +986,11 @@
       
       settingsBackdropUi.style.display = 'none';
       alert('설정이 안전하게 보관되었습니다!');
-      if (activeTab === 'camera') startCameraStream();
-    });
-
-    // ── 3-Segment 탭 컨트롤 핸들러 ──
-    tabBtns.forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        tabBtns.forEach(b => b.classList.remove('active'));
-        tabPanes.forEach(p => p.classList.remove('active'));
-        
-        btn.classList.add('active');
-        const targetTab = btn.getAttribute('data-tab');
-        activeTab = targetTab;
-        document.getElementById(`pane-${targetTab}`).classList.add('active');
-        
-        stopCameraStream(); // 다른 탭 이동 시 무조건 리소스 완전 회수
-        resetSearchFlow();
-        
-        if (targetTab === 'camera') {
-          startCameraStream(); // 실시간 촬영 탭에 왔을 때만 카메라 부팅
-        }
-      });
     });
 
     // ── 상태 전이에 따른 UI 신속 업데이트 엔진 ──
     function updateStatusUi() {
       // 1. 모든 바텀 드로워 뷰 일시정지
-      cameraShutterContainer.style.display = 'none';
       loadingStateUi.style.display = 'none';
       errorStateUi.style.display = 'none';
       resultsContainerUi.style.display = 'none';
@@ -1185,10 +998,8 @@
       priceBottomSheet.classList.remove('expanded', 'full-results');
 
       if (status === 'IDLE') {
-        if (activeTab === 'camera') {
-          priceBottomSheet.classList.add('expanded');
-          cameraShutterContainer.style.display = 'flex';
-        }
+        // IDLE 일때는 바텀 시트를 아래로 숨김
+        priceBottomSheet.classList.remove('expanded', 'full-results');
       } else if (status === 'ANALYZING' || status === 'SEARCHING') {
         priceBottomSheet.classList.add('expanded');
         loadingStateUi.style.display = 'block';
@@ -1207,7 +1018,6 @@
         renderResultsList();
       }
     }
-
     function resetSearchFlow() {
       status = 'IDLE';
       photoUrl = null;
@@ -1215,114 +1025,74 @@
       results = [];
       errorMessage = '';
       
-      // 파일 인풋들 값 비우기 (두 번째 선택 및 동일 파일 업로드 안 되는 문제 완벽 조치!)
+      // 파일 인풋들 값 비우기
       cameraFileInput.value = '';
       galleryFileInput.value = '';
       
       // 이미지 미리보기 리셋
-      cameraPlaceholderUi.style.display = 'block';
-      cameraCapturedPreview.style.display = 'none';
-      cameraCapturedPreview.src = '';
-      
-      galleryTriggerBox.style.display = 'block';
-      galleryPreviewCard.style.display = 'none';
-      galleryPreviewImg.src = '';
+      selectedPreviewArea.style.display = 'none';
+      selectedPreviewImg.src = '';
+      previewFilenameText.textContent = '';
       
       urlInputField.value = '';
       urlSearchSubmitBtn.disabled = true;
       clearUrlInputBtn.style.display = 'none';
-
-      // 만약 카메라 탭이면 다시 실시간 카메라 스트리밍 시작
-      if (activeTab === 'camera') {
-        startCameraStream();
-      } else {
-        stopCameraStream();
-      }
+      dashboardUrlPane.style.display = 'none';
 
       updateStatusUi();
     }
 
-    // ── 모드 1: 실시간 촬영 트리거 (WebRTC 캡처 또는 파일 폴백) ──
-    document.getElementById('camera-shutter-btn').addEventListener('click', () => {
-      if (cameraStream) {
-        captureLiveFrame();
+    // ── 대시보드 카드 클릭 핸들러 바인딩 ──
+    cardTriggerCamera.addEventListener('click', () => {
+      resetSearchFlow();
+      cameraFileInput.click();
+    });
+
+    cardTriggerGallery.addEventListener('click', () => {
+      resetSearchFlow();
+      galleryFileInput.click();
+    });
+
+    cardTriggerLink.addEventListener('click', () => {
+      resetSearchFlow();
+      if (dashboardUrlPane.style.display === 'none') {
+        dashboardUrlPane.style.display = 'flex';
       } else {
-        cameraFileInput.click();
+        dashboardUrlPane.style.display = 'none';
       }
     });
 
-    function captureLiveFrame() {
-      const videoWidth = cameraStreamVideo.videoWidth;
-      const videoHeight = cameraStreamVideo.videoHeight;
-      if (!videoWidth || !videoHeight) return;
-
-      // 오프스크린 캔버스 생성 및 렌더링
-      const canvas = document.createElement('canvas');
-      canvas.width = videoWidth;
-      canvas.height = videoHeight;
-      const ctx = canvas.getContext('2d');
-      
-      ctx.drawImage(cameraStreamVideo, 0, 0, videoWidth, videoHeight);
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-      
-      // 리소스 점유 방지를 위한 스트림 정지
-      stopCameraStream();
-      
-      // 인앱 스냅샷 뷰 전환
-      cameraCapturedPreview.src = dataUrl;
-      cameraCapturedPreview.style.display = 'block';
-      cameraPlaceholderUi.style.display = 'none';
-      cameraStreamVideo.style.display = 'none';
-      
-      photoUrl = dataUrl;
-      
-      // AI 비전 분석 시작
-      runAiDetection(dataUrl);
-    }
-
+    // ── 카메라 및 갤러리 파일 선택 시 처리 프로세스 ──
     cameraFileInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
-      
       processSelectedImage(file, 'camera');
-    });
-
-    // ── 모드 2: 앨범 선택 트리거 ──
-    galleryTriggerBox.addEventListener('click', () => {
-      galleryFileInput.click();
     });
 
     galleryFileInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
-      
       processSelectedImage(file, 'gallery');
     });
 
-    // 이미지 파일을 읽고 AI 탐색 흐름 실행
     function processSelectedImage(file, mode) {
       const reader = new FileReader();
       reader.onload = async (event) => {
         const base64Data = event.target.result;
         photoUrl = base64Data;
 
-        if (mode === 'camera') {
-          cameraPlaceholderUi.style.display = 'none';
-          cameraCapturedPreview.src = base64Data;
-          cameraCapturedPreview.style.display = 'block';
-        } else {
-          galleryTriggerBox.style.display = 'none';
-          galleryPreviewImg.src = base64Data;
-          galleryPreviewCard.style.display = 'block';
-        }
+        // 초정밀 미리보기 카드 노출
+        selectedPreviewImg.src = base64Data;
+        selectedPreviewArea.style.display = 'block';
+        previewFilenameText.textContent = file.name || (mode === 'camera' ? '실시간 즉시 촬영 사진' : '갤러리 업로드 이미지');
 
-        // 실시간 분석 돌입
+        // AI 최저가 실시간 검색 시작
         await runAiDetection(base64Data);
       };
       reader.readAsDataURL(file);
     }
 
-    // ── 모드 3: URL 입력 및 초기 설정 ──
+    // ── 모드 3: URL 입력 분석 이벤트 핸들러 ──
     urlInputField.addEventListener('input', () => {
       const val = urlInputField.value.trim();
       if (val) {
