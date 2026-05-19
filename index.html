@@ -1854,7 +1854,7 @@
       }
     }
 
-    // 메인 화면용 AI 직접 검색 파이프라인 (완전 보정 버전)
+    // 메인 화면용 AI 직접 검색 파이프라인 (Function Calling 최신 비서 버전)
     async function startAiDirectSearch(userInput) {
       if (!isValidKey(geminiApiKey)) {
         alert("Gemini API 키가 입력되지 않았습니다. 설정창에서 입력해 주세요.");
@@ -1867,32 +1867,44 @@
       status = 'ANALYZING';
       errorMessage = '';
       updateStatusUi();
-      loadingMessageText.textContent = '🤖 Gemini AI가 최적의 검색어를 도출 중...';
+      loadingMessageText.textContent = '🤖 Gemini AI 비서가 요청을 분석 중...';
 
       try {
         const systemContext = `
-    사용자가 다음과 같이 상품 검색을 요청했습니다: "${userInput}"
-
-    지시사항:
-    1. 사용자가 찾는 상품의 '핵심 검색어(브랜드명, 상품명, 용량 등)'만 정확히 추출하세요.
-    2. "찾아줘", "알려줘" 등 불필요한 서술어는 제거하세요.
-    3. 절대로 단어(예: 메디덤, 코카콜라 등)를 한 글자로 축약하거나 쪼개지 말고 원본 명사를 그대로 유지하세요.
-    4. 결과는 반드시 아래 JSON 형식으로만 출력하세요.
-
-    {"keyword": "추출된검색어"}
+너는 대한민국 쇼핑몰 최저가 검색 비서야.
+사용자의 요청을 분석하여 쇼핑 검색이 필요하다면 searchPrice 도구를 호출하세요.
+- 사용자가 입력한 상품명, 브랜드명은 절대 한 글자로 임의 축약하거나 쪼개지 말고 원본 명사를 최대한 살리세요. (예: "메디덤" -> "메디덤", "코카콜라" -> "코카콜라")
+- 사용자가 그냥 인사나 엉뚱한 대화를 시도하면 도구를 호출하지 말고 친절하게 대화형 텍스트로 답하세요.
         `.trim();
+
+        // Gemini에게 제공할 도구(Function Calling) 선언
+        const tools = [{
+          functionDeclarations: [{
+            name: "searchPrice",
+            description: "사용자가 특정 상품의 최저가를 찾거나 쇼핑 검색을 원할 때 호출하는 함수.",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                searchKeyword: {
+                  type: "STRING",
+                  description: "네이버 쇼핑 검색에 보낼 핵심 상품명 및 사양 (예: '메디덤', '펩시 제로 355ml 24캔')"
+                }
+              },
+              required: ["searchKeyword"]
+            }
+          }]
+        }];
 
         const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${geminiApiKey}`;
         const res = await fetch(geminiUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            contents: [{ parts: [{ text: systemContext }] }],
-            generationConfig: {
-              temperature: 0.1,
-              maxOutputTokens: 60,
-              responseMimeType: "application/json" // 💡 무조건 JSON으로만 대답하도록 강제 (가장 중요)
-            }
+            contents: [
+              { role: "user", parts: [{ text: `시스템 지침: ${systemContext}` }] },
+              { role: "user", parts: [{ text: `사용자 요청: ${userInput}` }] }
+            ],
+            tools: tools
           })
         });
 
@@ -1902,33 +1914,20 @@
         }
 
         const data = await res.json();
-        let rawResponse = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+        const part = data?.candidates?.[0]?.content?.parts?.[0];
 
-        if (!rawResponse) throw new Error('AI 응답을 분석할 수 없습니다.');
+        let searchKeyword = userInput; // 기본값으로 사용자 입력 원본 유지
 
-        let searchKeyword = userInput; // 기본값: 사용자 입력 원본
-
-        try {
-          // 1. 순수 JSON 파싱 시도
-          const cleanJsonStr = rawResponse.replace(/```json/g, '').replace(/```/g, '').trim();
-          const parsed = JSON.parse(cleanJsonStr);
-          if (parsed.keyword) {
-            searchKeyword = parsed.keyword.trim();
+        // AI가 Function Calling을 호출했는지 검사
+        if (part?.functionCall && part.functionCall.name === "searchPrice") {
+          const args = part.functionCall.args;
+          if (args && args.searchKeyword) {
+            searchKeyword = args.searchKeyword.trim();
           }
-        } catch (e) {
-          console.warn('JSON 파싱 실패, 2차 안전 보정 가동');
-          // 2. 파싱이 깨졌을 경우 "keyword": "알맹이" 에서 알맹이만 정규식으로 강제 추출
-          const fallbackMatch = rawResponse.match(/"keyword"\s*:\s*"([^"]+)"/);
-          if (fallbackMatch && fallbackMatch[1]) {
-            searchKeyword = fallbackMatch[1].trim();
-          } else {
-            // 그것도 안되면 그냥 특수문자 다 날리기
-            searchKeyword = rawResponse.replace(/["'{}\[\]:\n\r]/g, ' ').replace(/\s+/g, ' ').trim() || userInput;
-          }
-        }
-
-        // 3. 최후의 킬 스위치 (그래도 코드가 묻어나오면 원본 입력값으로 롤백)
-        if (searchKeyword.includes("keyword") || searchKeyword.includes("{")) {
+        } else if (part?.text) {
+          // 도구를 호출하지 않고 일반 대화 텍스트만 리턴한 경우 (예: "안녕하세요!")
+          console.log("AI Chat Response:", part.text.trim());
+          // 메인 검색창에서는 대화에 머물지 않고 검색을 바로 연결해주는 것이 자연스러우므로 원본 단어로 계속 진행합니다.
           searchKeyword = userInput;
         }
 
@@ -2119,6 +2118,7 @@
     document.getElementById('sheet-close-btn').addEventListener('click', resetSearchFlow);
 
     // ── Gemini 3 Flash 대화형 AI 검색 정제 엔진 (완전 보정 버전) ──────────────────────
+    // ── Gemini 3 Flash 대화형 AI 검색 정제 엔진 (Function Calling 버전) ──────────────────────
     async function askGeminiToRefineSearch(userRequest) {
       const responseBox = document.getElementById('ai-chat-response');
       const sendBtn = document.getElementById('ai-chat-send-btn');
@@ -2133,36 +2133,49 @@
 
       // 로딩 상태
       responseBox.className = 'ai-chat-response thinking';
-      responseBox.textContent = '🤖 Gemini가 최적 검색어를 생성 중...';
+      responseBox.textContent = '🤖 Gemini가 요청을 분석 중...';
       sendBtn.disabled = true;
       sendBtn.textContent = '⏳';
 
       try {
         const systemContext = `
-    너는 한국 온라인 쇼핑 최저가 검색 도우미야.
-    현재 검색된 원본 상품: "${keyword}"
-    사용자의 추가 조건 요청: "${userRequest}"
+너는 대한민국 쇼핑몰 최저가 검색 비서야.
+현재 검색되어 화면에 표시된 기준 상품 키워드: "${keyword}"
 
-    지시사항:
-    1. 원본 상품의 브랜드명과 핵심 명사를 절대 한 글자로 임의 축약하거나 훼손하지 말고 그대로 유지해.
-    2. 사용자의 추가 조건(용량, 수량, 종류 등)을 자연스럽게 조합해.
-    3. 결과는 반드시 아래 JSON 형식으로만 출력해. 다른 텍스트는 절대 포함하지 마.
+사용자의 추가 조건 요청에 따라 새로운 검색어를 조합해야 한다면 searchPrice 도구를 호출하세요.
+- 원본 상품의 브랜드명과 핵심 명사를 절대 한 글자로 축약하거나 훼손하지 말고 그대로 유지하세요.
+- 사용자의 추가 조건(용량, 수량, 종류 등)을 자연스럽게 조합해 최적화된 새로운 검색어를 도출하세요.
+- 만약 단순 인사나 칭찬, 검색과 상관없는 대화라면 도구를 호출하지 말고 친절하고 자연스러운 한글 텍스트로 바로 응답하세요.
+        `.trim();
 
-    {"keyword": "추출된검색어"}
-            `.trim();
+        // Gemini에게 제공할 도구(Function Calling) 선언
+        const tools = [{
+          functionDeclarations: [{
+            name: "searchPrice",
+            description: "기존 검색 키워드와 사용자의 필터링 조건을 조합하여 새로운 최저가 쇼핑 검색을 실행합니다.",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                searchKeyword: {
+                  type: "STRING",
+                  description: "조합 및 필터링이 완료된 최종 쇼핑 검색어 (예: '코카콜라 제로 355ml 24캔')"
+                }
+              },
+              required: ["searchKeyword"]
+            }
+          }]
+        }];
 
-        // 💡 주의: 아까 404 에러를 막기 위해 gemini-3-flash-preview 로 엔드포인트 통일
         const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${geminiApiKey}`;
         const res = await fetch(geminiUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            contents: [{ parts: [{ text: systemContext }] }],
-            generationConfig: {
-              temperature: 0.1,
-              maxOutputTokens: 60,
-              responseMimeType: "application/json" // 💡 무조건 JSON으로만 대답하도록 강제
-            }
+            contents: [
+              { role: "user", parts: [{ text: `시스템 지침: ${systemContext}` }] },
+              { role: "user", parts: [{ text: `사용자 요청: ${userRequest}` }] }
+            ],
+            tools: tools
           })
         });
 
@@ -2172,47 +2185,31 @@
         }
 
         const data = await res.json();
-        const rawResponse = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+        const part = data?.candidates?.[0]?.content?.parts?.[0];
 
-        if (!rawResponse) throw new Error('Gemini 응답을 추출하지 못했습니다.');
+        // AI가 Function Calling을 호출했는지 검사
+        if (part?.functionCall && part.functionCall.name === "searchPrice") {
+          const refinedKeyword = part.functionCall.args.searchKeyword.trim();
+          
+          responseBox.className = 'ai-chat-response';
+          responseBox.textContent = `🔍 "${refinedKeyword}" 로 재검색합니다...`;
 
-        let refinedKeyword = keyword; // 기본값: 이전 검색어 유지
+          // 새 키워드로 검색 재실행
+          keyword = refinedKeyword;
+          document.getElementById('result-keyword-text').textContent = refinedKeyword;
+          status = 'SEARCHING';
+          updateStatusUi();
+          await performPriceSearch(refinedKeyword);
 
-        try {
-          // 1. 순수 JSON 파싱 시도
-          const cleanJsonStr = rawResponse.replace(/```json/g, '').replace(/```/g, '').trim();
-          const parsed = JSON.parse(cleanJsonStr);
-          if (parsed.keyword) {
-            refinedKeyword = parsed.keyword.trim();
-          }
-        } catch (e) {
-          console.warn('결과창 AI JSON 파싱 실패, 2차 안전 보정 가동');
-          // 2. 파싱이 깨졌을 경우 정규식으로 강제 추출
-          const fallbackMatch = rawResponse.match(/"keyword"\s*:\s*"([^"]+)"/);
-          if (fallbackMatch && fallbackMatch[1]) {
-            refinedKeyword = fallbackMatch[1].trim();
-          } else {
-            refinedKeyword = rawResponse.replace(/["'{}\[\]:\n\r]/g, ' ').replace(/\s+/g, ' ').trim() || keyword;
-          }
+          // 검색 후 응답 박스 초기화
+          responseBox.textContent = `✅ "${refinedKeyword}" 결과입니다. 추가 조건을 더 요청하실 수 있어요!`;
+        } else if (part?.text) {
+          // 도구를 실행하지 않고 일반 텍스트 대화 응답이 온 경우 (예: "천만에요!", "무엇을 도와드릴까요?")
+          responseBox.className = 'ai-chat-response';
+          responseBox.textContent = part.text.trim();
+        } else {
+          throw new Error('Gemini 응답에서 유효한 처리 경로를 찾을 수 없습니다.');
         }
-
-        // 3. 최후의 킬 스위치 (코드가 묻어나오면 원본 검색어로 롤백)
-        if (refinedKeyword.includes("keyword") || refinedKeyword.includes("{")) {
-          refinedKeyword = keyword;
-        }
-
-        responseBox.className = 'ai-chat-response';
-        responseBox.textContent = `🔍 "${refinedKeyword}" 로 재검색합니다...`;
-
-        // 새 키워드로 검색 재실행
-        keyword = refinedKeyword;
-        document.getElementById('result-keyword-text').textContent = refinedKeyword;
-        status = 'SEARCHING';
-        updateStatusUi();
-        await performPriceSearch(refinedKeyword);
-
-        // 검색 후 응답 박스 초기화
-        responseBox.textContent = `✅ "${refinedKeyword}" 결과입니다. 추가 조건을 더 요청하실 수 있어요!`;
 
       } catch (err) {
         console.error('[AI 정제 검색 오류]', err);
