@@ -1153,6 +1153,7 @@
     let results = [];
     let errorMessage = '';
     let isMockDataUsed = false;
+    let lastAiConversationReply = '';
 
     // API 키 관리 및 백엔드 서버 설정
     let visionApiKey = localStorage.getItem('visionApiKey') || '';
@@ -1313,6 +1314,7 @@
       keyword = '';
       results = [];
       errorMessage = '';
+      lastAiConversationReply = '';
 
       // 파일 인풋들 값 비우기
       cameraFileInput.value = '';
@@ -1924,18 +1926,19 @@
           if (args && args.searchKeyword) {
             searchKeyword = args.searchKeyword.trim();
           }
+          keyword = searchKeyword;
+          status = 'SEARCHING';
+          updateStatusUi();
+          await performPriceSearch(searchKeyword);
         } else if (part?.text) {
           // 도구를 호출하지 않고 일반 대화 텍스트만 리턴한 경우 (예: "안녕하세요!")
           console.log("AI Chat Response:", part.text.trim());
-          // 메인 검색창에서는 대화에 머물지 않고 검색을 바로 연결해주는 것이 자연스러우므로 원본 단어로 계속 진행합니다.
-          searchKeyword = userInput;
+          lastAiConversationReply = part.text.trim();
+          keyword = userInput;
+          results = [];
+          status = 'DONE';
+          updateStatusUi();
         }
-
-        keyword = searchKeyword;
-        status = 'SEARCHING';
-        updateStatusUi();
-
-        await performPriceSearch(searchKeyword);
 
       } catch (err) {
         console.error("AI Direct Search Error:", err);
@@ -2083,6 +2086,21 @@
     // ── 결과 렌더링 엔진 ──
     function renderResultsList() {
       resultsPriceListBox.innerHTML = '';
+
+      if (lastAiConversationReply) {
+        resultsPriceListBox.innerHTML += `
+          <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 12px; padding: 16px; margin-bottom: 16px; line-height: 1.6; color: #e2e8f0; font-size: 14px; text-align: left; display: flex; gap: 10px; align-items: flex-start;">
+            <span style="font-size: 20px;">💬</span>
+            <div>
+              <strong style="color: #60a5fa; display: block; margin-bottom: 4px;">AI 비서의 답변</strong>
+              ${lastAiConversationReply}
+            </div>
+          </div>
+        `;
+        // 다음 검색 시 찌꺼기가 남지 않도록 초기화
+        lastAiConversationReply = '';
+        return;
+      }
 
       if (results.length === 0) {
         resultsPriceListBox.innerHTML += `<div class="empty-results">😔 매칭되는 온라인 쇼핑몰 최저가를 찾지 못했습니다.</div>`;
