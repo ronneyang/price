@@ -1078,25 +1078,14 @@
         </div>
 
         <div class="modal-body">
-          <p class="modal-instruction">스마트폰 단독으로 이미지 인식을 사용하기 위한 API 인증키를 설정합니다. 비워둘 경우 스마트한 모형(Mock) 테스팅이 제공됩니다.</p>
-
-          <div class="input-group">
-            <label>Google Cloud Vision API Key</label>
-            <input type="text" id="setting-vision-key" placeholder="AIzaSyA...">
-            <span class="input-guide">
-              * 발급 경로: <a href="https://console.cloud.google.com" target="_blank"
-                style="color: var(--accent-blue); text-decoration: none;">구글 클라우드 콘솔</a> 로그인 &rarr; 새 프로젝트 생성 &rarr;
-              Cloud Vision API 사용 설정 &rarr; 사용자 인증 정보에서 API 키 생성.
-            </span>
-          </div>
+          <p class="modal-instruction">스마트폰 단독으로 실시간 이미지 인식 및 최저가 검색을 수행하기 위한 API 인증키를 설정합니다. 비워둘 경우 스마트한 모형(Mock) 테스팅이 제공됩니다.</p>
 
           <div class="input-group" style="margin-top: 10px;">
             <label>Gemini API Key (Google AI Studio)</label>
             <input type="text" id="setting-gemini-key" placeholder="AIzaSyA...">
             <span class="input-guide">
               * 발급 경로: <a href="https://aistudio.google.com/app/apikey" target="_blank"
-                style="color: var(--accent-blue); text-decoration: none;">Google AI Studio</a> 접속 후 API 키 생성. (Vision
-              API와 분리 사용)
+                style="color: var(--accent-blue); text-decoration: none;">Google AI Studio</a> 접속 후 API 키 생성. (멀티모달 이미지 분석 및 대화형 검색 정제에 사용)
             </span>
           </div>
 
@@ -1156,7 +1145,6 @@
     let lastAiConversationReply = '';
 
     // API 키 관리 및 백엔드 서버 설정
-    let visionApiKey = localStorage.getItem('visionApiKey') || '';
     let geminiApiKey = localStorage.getItem('geminiApiKey') || '';
     let naverClientId = localStorage.getItem('naverClientId') || '';
     let naverClientSecret = localStorage.getItem('naverClientSecret') || '';
@@ -1226,7 +1214,6 @@
     const saveSettingsBtn = document.getElementById('save-settings-btn');
 
     // 설정 인풋들
-    const settingVisionKey = document.getElementById('setting-vision-key');
     const settingGeminiKey = document.getElementById('setting-gemini-key');
     const settingNaverId = document.getElementById('setting-naver-id');
     const settingNaverSecret = document.getElementById('setting-naver-secret');
@@ -1235,7 +1222,6 @@
     // ── 초기화 로직 ──
     window.addEventListener('DOMContentLoaded', () => {
       // 로컬 스토리지 데이터 인풋 매핑
-      settingVisionKey.value = visionApiKey;
       settingGeminiKey.value = geminiApiKey;
       settingNaverId.value = naverClientId;
       settingNaverSecret.value = naverClientSecret;
@@ -1261,13 +1247,11 @@
       settingsBackdropUi.style.display = 'none';
     });
     saveSettingsBtn.addEventListener('click', () => {
-      visionApiKey = settingVisionKey.value.trim();
       geminiApiKey = settingGeminiKey.value.trim();
       naverClientId = settingNaverId.value.trim();
       naverClientSecret = settingNaverSecret.value.trim();
       backendUrl = settingBackendUrl.value.trim() || 'http://localhost:3000';
 
-      localStorage.setItem('visionApiKey', visionApiKey);
       localStorage.setItem('geminiApiKey', geminiApiKey);
       localStorage.setItem('naverClientId', naverClientId);
       localStorage.setItem('naverClientSecret', naverClientSecret);
@@ -1529,68 +1513,84 @@
       try {
         let detectedKeyword = "";
 
-        if (isValidKey(visionApiKey)) {
+        if (isValidKey(geminiApiKey)) {
           try {
-            // Google Vision API 실시간 통신
+            const mimeType = base64Image.split(';')[0].split(':')[1] || 'image/jpeg';
             const cleanBase64 = base64Image.split(',')[1];
-            const visionApiUrl = `https://vision.googleapis.com/v1/images:annotate?key=${visionApiKey}`;
-            const payload = {
-              requests: [{
-                image: { content: cleanBase64 },
-                features: [
-                  { type: "WEB_DETECTION", maxResults: 10 },
-                  { type: "TEXT_DETECTION", maxResults: 1 }
-                ]
-              }]
-            };
 
-            const res = await fetch(visionApiUrl, {
+            const prompt = `
+이 이미지 속 상품을 식별하고, 온라인 최저가 검색에 사용할 단 하나의 '핵심 상품명(브랜드명, 정확한 상품명, 용량/수량 등)'을 정확하게 추출하세요.
+- 이미지에 글씨(텍스트)가 있다면 상품 라벨이나 로고 위주로 읽으세요.
+- "열량", "고형량", "영양정보", "유통기한", "주의사항" 등 제조 정보 텍스트는 완전히 무시하세요.
+- 불필요한 서술어나 감탄사 없이, 오직 검색창에 바로 넣을 수 있는 최적의 검색어만 추출하세요.
+- 반드시 아래 JSON 스키마 형식으로 응답하세요:
+{"keyword": "추출된 상품 검색어"}
+            `.trim();
+
+            const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${geminiApiKey}`;
+            const res = await fetch(geminiUrl, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
+              body: JSON.stringify({
+                contents: [{
+                  parts: [
+                    { text: prompt },
+                    {
+                      inlineData: {
+                        mimeType: mimeType,
+                        data: cleanBase64
+                      }
+                    }
+                  ]
+                }],
+                generationConfig: {
+                  temperature: 0.1,
+                  responseMimeType: "application/json",
+                  responseSchema: {
+                    type: "OBJECT",
+                    properties: {
+                      keyword: {
+                        type: "STRING",
+                        description: "추출된 상품 핵심 검색어"
+                      }
+                    },
+                    required: ["keyword"]
+                  }
+                }
+              })
             });
+
+            if (!res.ok) {
+              const errText = await res.text();
+              throw new Error(`Gemini Multimodal API 오류 (HTTP ${res.status}): ${errText}`);
+            }
+
             const data = await res.json();
-            if (data.error) throw new Error("Vision API: " + data.error.message);
+            const rawResponse = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
 
-            const webEntities = data.responses[0].webDetection?.webEntities || [];
-            const textAnnotations = data.responses[0].textAnnotations || [];
-            const genericWords = ['skin care', 'hair care', 'shampoo', 'conditioner', 'cosmetics', 'product', 'bottle', 'lotion', 'cream', 'beauty', 'liquid'];
-
-            const koreanEntities = webEntities.filter(e => e.description && /[가-힣]/.test(e.description) && e.score >= 0.3);
-            const otherEntities = webEntities.filter(e => {
-              if (!e.description || e.score < 0.5) return false;
-              return !genericWords.some(g => e.description.toLowerCase() === g);
-            });
-
-            const noiseWords = [
-              '까지', '열량', '고형량', '칼로리', '영양정보', '소비기한', '유통기한', '보관방법', '총열량', '고형', '식품', '식품유형',
-              '제조원', '판매원', '반품', '교환', '고객', '센터', '상담', '전화', '번호', '원재료명', '함량', '영양', '정보', '보관',
-              '방법', '실온', '냉장', '냉동', '포장', '재질', '내용량', '원산지', '수입원', '주의사항', '소비자', '분쟁', '해결', '기준'
-            ];
-
-            if (koreanEntities.length > 0) {
-              const filteredEntities = koreanEntities.map(e => e.description).filter(w => !noiseWords.some(nw => w.includes(nw)));
-              detectedKeyword = filteredEntities.slice(0, 2).join(' ');
+            try {
+              const parsed = JSON.parse(rawResponse);
+              if (parsed.keyword) {
+                detectedKeyword = parsed.keyword.trim();
+              }
+            } catch (jsonErr) {
+              console.warn("[최저가집사] Gemini Multimodal JSON 파싱 실패, 2차 백업 파싱 가동");
+              const fallbackMatch = rawResponse.match(/"keyword"\s*:\s*"([^"]+)"/);
+              if (fallbackMatch && fallbackMatch[1]) {
+                detectedKeyword = fallbackMatch[1].trim();
+              } else {
+                detectedKeyword = rawResponse.replace(/["'{}\[\]:\n\r]/g, ' ').replace(/\s+/g, ' ').trim();
+              }
             }
-
-            if (!detectedKeyword && textAnnotations.length > 0) {
-              const fullText = textAnnotations[0].description;
-              const allWords = fullText.match(/[가-힣]{2,}/g) || [];
-              const koreanWords = allWords.filter(w => !noiseWords.includes(w) && !noiseWords.some(nw => w.includes(nw)));
-              detectedKeyword = koreanWords.length > 0 ? koreanWords.slice(0, 3).join(' ') : fullText.split('\n')[0].trim();
-            }
-
-            if (!detectedKeyword && otherEntities.length > 0) {
-              detectedKeyword = otherEntities.slice(0, 2).map(e => e.description).join(' ');
-            }
-          } catch (visionErr) {
-            console.warn("[최저가집사] Google Vision API 연동 실패. 모형 데이터로 안전하게 대체합니다:", visionErr);
+            logDiagnostic("📸 Gemini 멀티모달 분석 성공: " + detectedKeyword, 'success');
+          } catch (geminiErr) {
+            console.warn("[최저가집사] Gemini 멀티모달 분석 실패. 모형 데이터로 대체합니다:", geminiErr);
             detectedKeyword = "";
           }
         }
 
         if (!detectedKeyword) {
-          console.warn("[최저가집사] API 키가 없어 데모 시뮬레이션 데이터를 공급합니다.");
+          console.warn("[최저가집사] API 키가 없거나 분석에 실패하여 데모 시뮬레이션 데이터를 공급합니다.");
           await new Promise(r => setTimeout(r, 1500));
           detectedKeyword = "농심 신라면 120g 5개입 멀티팩";
         }
@@ -1605,7 +1605,7 @@
       } catch (err) {
         console.error("AI Detection Error:", err);
         status = 'ERROR';
-        errorMessage = err.message || "이미지 분석 중 기술적인 한계로 오류가 발생했습니다.";
+        errorMessage = err.message || "이미지 분석 중 오류가 발생했습니다.";
         updateStatusUi();
       }
     }
@@ -1966,7 +1966,7 @@
         ];
 
         const keywordWords = searchKeyword.split(/[\s\-_]+/).filter(w => w.length >= 2);
-        let broadSearchKeyword = searchKeyword;
+        let broadSearchKeyword = searchKeyword; // 💡 임의로 자르지 않고 원본 문자열 전체 유지
         let brandWord = '';
         let specificWords = [];
 
@@ -1976,10 +1976,6 @@
           specificWords = keywordWords.slice(1).filter(w => {
             return !genericWords.includes(w.toLowerCase());
           });
-          // API 검색 쿼리: 브랜드명 + 1차 핵심 식별어만으로 넓게 검색 (네이버 0건 방지)
-          broadSearchKeyword = specificWords.length > 0
-            ? `${keywordWords[0]} ${specificWords[0]}`
-            : keywordWords[0];
         }
 
         logDiagnostic(`🔍 API 쿼리: '${broadSearchKeyword}' (원본: '${searchKeyword}')`, 'info');
@@ -2053,9 +2049,9 @@
             // A. 브랜드명 필수 포함
             if (!t.includes(brandWord) && !tNoSp.includes(brandWord)) return false;
 
-            // B. 핵심 식별어 최소 1개 포함 (specificWords 기준)
+            // B. 핵심 식별어 모두 포함 (specificWords 기준, .every() 로 엄격화)
             if (specificWords.length > 0) {
-              const match = specificWords.some(w => {
+              const match = specificWords.every(w => {
                 const sw = w.toLowerCase();
                 return t.includes(sw) || tNoSp.includes(sw);
               });
