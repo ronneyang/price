@@ -1960,26 +1960,7 @@
         let isApiConnectionSuccessful = false;
 
         // ── 1단계: 검색어 분석 ─────────────────────────────────────────
-        // '밴드', '패치' 등 카테고리 형태 명사 = 검색 범위만 좁히고 핵심 특정력은 없음 → genericWords 처리
-        const genericWords = [
-          '남녀공용', '남성용', '여성용', '공용', '샌들', '슬리퍼', '신발', '슈즈', '아쿠아', '운동화', '슬링백', '스니커즈', '단화',
-          '샴푸', '린스', '염색', '새치', '에센스', '오일', '로션', '바디', '워시', '폼클렌징', '화장품', '기초',
-          '1개', '2개', '3개', '1팩', '2팩', '3팩', '묶음', '증정', '사은품', '패키지', '박스', '캔', '병', '개입',
-          '밴드', '패치', '시트', '연고', '크림', '젤', '필름', '스티커', '세트', '팩'
-        ];
-
-        const keywordWords = searchKeyword.split(/[\s\-_]+/).filter(w => w.length >= 2);
         let broadSearchKeyword = searchKeyword; // 💡 임의로 자르지 않고 원본 문자열 전체 유지
-        let brandWord = '';
-        let specificWords = [];
-
-        if (keywordWords.length > 0) {
-          brandWord = keywordWords[0].toLowerCase();
-          // genericWords에 속하지 않는 단어들만 핵심 식별어(specificWords)로 분류
-          specificWords = keywordWords.slice(1).filter(w => {
-            return !genericWords.includes(w.toLowerCase());
-          });
-        }
 
         logDiagnostic(`🔍 API 쿼리: '${broadSearchKeyword}' (원본: '${searchKeyword}')`, 'info');
         logDiagnostic('🩺 실시간 최저가 조사를 가동합니다...', 'info');
@@ -2043,29 +2024,95 @@
           }
         }
 
-        // ── 2단계: 앱 내부 초정밀 2차 검수 (오매칭 원천 차단) ──────────
-        // 넓게 가져온 후보군 중, 원본 핵심 식별어가 없는 엉뚱한 제품을 제거
-        if (brandWord && fetchedItems.length > 0) {
+        // ── 2단계: Gemini API를 활용한 'LLM as a Judge' 정밀 매칭 (오매칭 원천 차단) ──────────
+        if (fetchedItems.length > 0 && isValidKey(geminiApiKey)) {
           const before = fetchedItems.length;
-          fetchedItems = fetchedItems.filter(item => {
-            const t = item.title.toLowerCase();
-            const tNoSp = t.replace(/\s+/g, ''); // 띄어쓰기 무력화 (예: 하이드로콜로이드 = 하이드로 콜로이드)
+          logDiagnostic(`🤖 Gemini LLM Judge를 가동하여 2차 검수를 시도합니다... (총 ${before}개 후보)`, 'info');
 
-            // A. 브랜드명 필수 포함
-            if (!t.includes(brandWord) && !tNoSp.includes(brandWord)) return false;
+          try {
+            const productListText = fetchedItems.map((item, index) => `[${index}] ${item.title}`).join('\n');
 
-            // B. 핵심 식별어 모두 포함 (specificWords 기준, .every() 로 엄격화)
-            if (specificWords.length > 0) {
-              const match = specificWords.every(w => {
-                const sw = w.toLowerCase();
-                return t.includes(sw) || tNoSp.includes(sw);
-              });
-              if (!match) return false;
+            const systemPrompt = `
+당신은 대한민국 쇼핑몰 상품 매칭 적합성을 판별하는 초정밀 AI 판사(Judge)입니다.
+사용자의 검색어 의도와 네이버/쿠팡 등 쇼핑몰에서 긁어온 상품 목록의 제목을 비교하여, 사용자가 진짜 원했던 바로 그 '동일 상품(본품 및 스펙 일치)'만 완벽하게 걸러내야 합니다.
+
+[판별 가이드라인]
+1. 사용자의 검색어(의도): "${searchKeyword}"
+2. 사용자가 '본품(예: 보조배터리)'을 찾고 있다면, 결과에 섞여 있는 '부속품 및 악세서리(예: 케이스, 그립톡, 파우치, 스트랩 등)'는 무조건 탈락(제외)시키세요.
+3. 반대로 사용자가 처음부터 '부속품(예: 케이스, 보호필름)'을 찾고 있다면, 부속품만 남기고 '본품'은 과감히 탈락시키세요.
+4. 파생형 및 상세 옵션(예: 제로 칼로리 vs 일반 칼로리, 무선 vs 유선, 프로 vs 일반)의 혼동이 있을 경우, 사용자의 검색 스펙/의도와 정확하게 일치하는 상품만 합격시키세요.
+5. 판매자가 검색어와 완전히 똑같지 않은 동의어(예: "디지바이스" = "디지몬 대장치")를 상품명에 사용했더라도, 문맥상 완전히 동일한 상품임이 명백하다면 합격시키세요.
+6. 브랜드명 매칭을 정교하게 판별하세요. 만약 사용자가 특정 브랜드(예: 펩시)를 찾고 있는데 타사 브랜드(예: 코카콜라) 제품이 섞여있다면 제외시키세요.
+
+[입력 데이터]
+${productListText}
+
+위의 [입력 데이터]를 철저히 검수하고, 합격 판정을 받은 상품들의 고유 [번호] 목록만을 아래 JSON 스키마 형식으로 응답하세요.
+            `.trim();
+
+            const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${geminiApiKey}`;
+            const res = await fetch(geminiUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{
+                  parts: [{ text: systemPrompt }]
+                }],
+                generationConfig: {
+                  temperature: 0.0,
+                  responseMimeType: "application/json",
+                  responseSchema: {
+                    type: "OBJECT",
+                    properties: {
+                      valid_indices: {
+                        type: "ARRAY",
+                        description: "합격 판정을 받은 상품들의 고유 인덱스 번호 배열",
+                        items: {
+                          type: "INTEGER"
+                        }
+                      }
+                    },
+                    required: ["valid_indices"]
+                  }
+                }
+              })
+            });
+
+            if (res.ok) {
+              const resData = await res.json();
+              const rawText = resData?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
+              let validIndices = [];
+              try {
+                const parsed = JSON.parse(rawText);
+                validIndices = parsed.valid_indices || [];
+              } catch (parseErr) {
+                console.warn("[최저가집사] LLM Judge JSON 파싱 실패, 정규식 시도");
+                const match = rawText.match(/"valid_indices"\s*:\s*\[([^\]]*)\]/);
+                if (match && match[1]) {
+                  validIndices = match[1].split(',').map(n => parseInt(n.trim(), 10)).filter(n => !isNaN(n));
+                }
+              }
+
+              if (validIndices && validIndices.length > 0) {
+                const filtered = fetchedItems.filter((_, idx) => validIndices.includes(idx));
+                if (filtered.length > 0) {
+                  fetchedItems = filtered;
+                  logDiagnostic(`🎯 Gemini LLM Judge 검수 완료: 후보 ${before}개 → 최종 ${fetchedItems.length}개 합격`, 'success');
+                } else {
+                  logDiagnostic('⚠️ Gemini LLM Judge가 모든 상품을 제외했습니다. 안전장치 가동: 원본 리스트를 유지합니다.', 'warn');
+                }
+              } else {
+                logDiagnostic('⚠️ Gemini LLM Judge 합격 인덱스가 0건입니다. 안전장치 가동: 원본 리스트를 유지합니다.', 'warn');
+              }
+            } else {
+              const errText = await res.text();
+              console.warn("[최저가집사] Gemini LLM Judge API 오류:", errText);
+              logDiagnostic('⚠️ Gemini LLM Judge API 오류로 2차 검수를 우회합니다. (원본 유지)', 'warn');
             }
-
-            return true;
-          });
-          logDiagnostic(`🎯 2차 정밀 검수: 후보 ${before}개 → 정밀 매칭 ${fetchedItems.length}개 (오매칭 차단 완료)`, 'info');
+          } catch (judgeErr) {
+            console.error("[최저가집사] Gemini LLM Judge 실행 에러:", judgeErr);
+            logDiagnostic('⚠️ Gemini LLM Judge 장애로 2차 검수를 우회합니다. (원본 유지)', 'warn');
+          }
         }
 
         if (!isApiConnectionSuccessful && fetchedItems.length === 0) {
