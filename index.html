@@ -417,6 +417,8 @@
       background: rgba(255, 255, 255, 0.15);
       border-radius: 2px;
       margin: 0 auto 16px;
+      cursor: ns-resize; /* 드래그 가능 표시 */
+      touch-action: none; /* 터치 스크롤 방지 */
     }
 
     /* 로딩 상태 */
@@ -424,6 +426,8 @@
       display: none;
       text-align: center;
       padding: 30px 10px;
+      overflow-y: auto;
+      max-height: calc(100% - 20px);
     }
 
     .loading-spinner {
@@ -449,6 +453,8 @@
       display: none;
       text-align: center;
       padding: 20px 10px;
+      overflow-y: auto;
+      max-height: calc(100% - 20px);
     }
 
     .error-icon {
@@ -1241,6 +1247,7 @@
       resultsContainerUi.style.display = 'none';
 
       priceBottomSheet.classList.remove('expanded', 'full-results');
+      priceBottomSheet.style.height = ''; // 드래그 앤 드롭으로 설정된 인라인 높이 초기화
 
       if (status === 'IDLE') {
         // IDLE 일때는 바텀 시트를 아래로 숨김
@@ -2132,6 +2139,56 @@
         input.value = '';
       }
     });
+
+    // ── 바텀 시트 팝업 드래그 앤 리사이즈 로직 ──
+    const handleEl = document.querySelector('.sheet-drag-handle');
+    let isDraggingSheet = false;
+    let startDragY = 0;
+    let startSheetHeight = 0;
+
+    function onDragStart(e) {
+      if (status === 'IDLE') return; // IDLE일 땐 드래그 불가
+      isDraggingSheet = true;
+      startDragY = e.touches ? e.touches[0].clientY : e.clientY;
+      startSheetHeight = priceBottomSheet.getBoundingClientRect().height;
+      priceBottomSheet.style.transition = 'none'; // 드래그 중 애니메이션 끄기
+    }
+
+    function onDragMove(e) {
+      if (!isDraggingSheet) return;
+      const currentY = e.touches ? e.touches[0].clientY : e.clientY;
+      const deltaY = startDragY - currentY; // 올리면 양수, 내리면 음수
+      let newHeight = startSheetHeight + deltaY;
+      
+      const minHeight = 100;
+      const maxHeight = window.innerHeight * 0.95; // 화면 95%까지 확장 가능
+      
+      if (newHeight < minHeight) newHeight = minHeight;
+      if (newHeight > maxHeight) newHeight = maxHeight;
+      
+      priceBottomSheet.style.height = `${newHeight}px`;
+    }
+
+    function onDragEnd() {
+      if (!isDraggingSheet) return;
+      isDraggingSheet = false;
+      priceBottomSheet.style.transition = ''; // 애니메이션 복구
+      
+      // 만약 너무 작게 내렸으면 닫기(IDLE) 처리
+      if (priceBottomSheet.getBoundingClientRect().height <= 110) {
+        resetSearchFlow();
+      }
+    }
+
+    // 모바일 터치 이벤트
+    handleEl.addEventListener('touchstart', onDragStart, {passive: true});
+    document.addEventListener('touchmove', onDragMove, {passive: true});
+    document.addEventListener('touchend', onDragEnd);
+
+    // PC 마우스 이벤트
+    handleEl.addEventListener('mousedown', onDragStart);
+    document.addEventListener('mousemove', onDragMove);
+    document.addEventListener('mouseup', onDragEnd);
   </script>
 </body>
 </html>
