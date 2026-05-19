@@ -1214,11 +1214,7 @@
       
       // 만약 주소 앞뒤에 상품명 텍스트가 같이 붙여넣어진 경우 (쿠팡 앱 공유하기 버튼 양식)
       let extractedTitle = rawInput.replace(targetUrl, "").trim();
-      // 각종 노이즈 단어 제거
-      extractedTitle = extractedTitle
-        .replace(/[\n\r,\[\]\(\)]/g, " ")
-        .replace(/\s+/g, " ")
-        .trim();
+      extractedTitle = refineProductTitle(extractedTitle);
       
       if (extractedTitle && extractedTitle.length > 2) {
         logDiagnostic("✨ 공유 텍스트에서 진짜 상품명 검출 성공: " + extractedTitle, 'success');
@@ -1254,6 +1250,38 @@
         }
       }
       return rawKeyword;
+    }
+
+    // 상세한 스펙 노이즈(용량, 수량, 단위, 불필요한 기호)를 말끔히 정제하여 순수 검색 키워드만 추출
+    function refineProductTitle(title) {
+      if (!title) return "";
+      
+      let clean = title.trim();
+      
+      // 1. 대괄호/소괄호 및 그 내용물 제거 (예: [쿠팡무료배송], (48개입) 등)
+      clean = clean.replace(/\[[^\]]*\]/g, " ");
+      clean = clean.replace(/\([^\)]*\)/g, " ");
+      
+      // 2. 주소창, 콤마, 말줄임표(...) 및 특수 기호 제거
+      clean = clean.replace(/[\n\r,\.!@#$%\^&\*_+=\-\/\\|\[\]\{\}\(\)<>\?;:]/g, " ");
+      
+      // 3. 흔히 등장하는 규격/단위/용량/수량 형태 제거용 정규식
+      clean = clean.replace(/\d+\s*(?:x|\*)\s*\d+\s*(?:mm|cm|m)/gi, " "); // 크기 규격 (예: 8 x 11 mm)
+      clean = clean.replace(/\d+\s*(?:mm|cm|m|g|kg|ml|l|매|개|입|통|병|포|팩|장|권|벌|세트|set|box|박스)/gi, " "); // 용량/수량 단위
+      
+      // 4. 불필요한 공용 쇼핑 단어 정제
+      clean = clean.replace(/\b(?:쿠팡|추천|특가|할인|무료배송|배송|정품|공식|기획|세일)\b/gi, " ");
+      
+      // 5. 연속된 공백 한 개로 정규화
+      clean = clean.replace(/\s+/g, " ").trim();
+      
+      // 6. 단어가 너무 길어지면 앞의 핵심 명사 3~4개만 추출 (일반적으로 브랜드명 + 핵심제품명 위주)
+      const words = clean.split(" ");
+      if (words.length > 4) {
+        clean = words.slice(0, 4).join(" ");
+      }
+      
+      return clean;
     }
 
     // ── 핵심 AI 비전 키워드 추출 & 실시간 최저가 탐색 스크립트 ──
@@ -1563,13 +1591,7 @@
             }
 
             if (parsedTitle && !parsedTitle.toLowerCase().includes("deeplink") && !parsedTitle.toLowerCase().includes("redirect") && !parsedTitle.toLowerCase().includes("access denied")) {
-              parsedTitle = parsedTitle
-                .replace(" - 쿠팡", "")
-                .replace(" : 네이버 쇼핑", "")
-                .replace("네이버 쇼핑", "")
-                .replace(" : 스마트스토어", "")
-                .trim();
-                
+              parsedTitle = refineProductTitle(parsedTitle);
               metaTitle = parsedTitle;
               logDiagnostic("✅ 단축 주소 우회 추적 성공! 상품명: " + metaTitle, 'success');
             }
