@@ -922,6 +922,14 @@
               * 스마트폰/에뮬레이터 실기기 테스트 시 PC의 실제 IP를 입력하세요 (예: <code>http://192.168.0.15:3000</code>).
             </span>
           </div>
+
+          <!-- 실시간 API 진단 로그 패널 -->
+          <div class="diagnostics-panel" style="margin-top: 15px; border-top: 1px dashed var(--glass-border); padding-top: 12px;">
+            <label style="color: #ff9f43; font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+              🩺 실시간 API 통신 진단 콘솔 (Diagnostics Logs)
+            </label>
+            <div id="diagnostics-log-box" style="background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; padding: 10px; font-family: monospace; font-size: 10px; color: #a9b1d6; height: 95px; overflow-y: auto; line-height: 1.5; white-space: pre-wrap; text-align: left;">[시스템] API 키 설정 및 통신 대기 중...</div>
+          </div>
         </div>
 
         <div class="modal-footer">
@@ -960,6 +968,20 @@
       if (!key) return false;
       const k = key.trim().toLowerCase();
       return k !== '' && k !== 'null' && k !== 'undefined' && k !== 'dummy' && k.length > 5;
+    }
+
+    // 실시간 디버그/진단 로그 콘솔 함수
+    function logDiagnostic(msg, type = 'info') {
+      const box = document.getElementById('diagnostics-log-box');
+      if (!box) return;
+      const time = new Date().toLocaleTimeString();
+      let color = '#a9b1d6';
+      if (type === 'error') color = '#f7768e';
+      if (type === 'success') color = '#9ece6a';
+      if (type === 'warn') color = '#e0af68';
+      
+      box.innerHTML += `\n<span style="color: ${color}">[${time}] ${msg}</span>`;
+      box.scrollTop = box.scrollHeight;
     }
 
     // DOM 요소 캐싱
@@ -1364,9 +1386,11 @@
     async function performPriceSearch(searchKeyword) {
       try {
         let fetchedItems = [];
+        logDiagnostic("🔍 '" + searchKeyword + "' 최저가 실시간 조사를 가동합니다...", 'info');
 
         if (isValidKey(naverClientId) && isValidKey(naverClientSecret)) {
           try {
+            logDiagnostic("🔑 입력된 네이버 API 키 감지됨. CORS 우회 프록시 직접 연동을 시도합니다...", 'info');
             // 네이버 쇼핑 OpenAPI 실시간 기기 다이렉트 통신 (CORS bypass/WebView 대응)
             const query = encodeURIComponent(searchKeyword);
             const targetUrl = `https://openapi.naver.com/v1/search/shop.json?query=${query}&display=15&sort=asc`;
@@ -1390,31 +1414,45 @@
                 link: item.link,
                 imageUrl: item.image
               }));
+              logDiagnostic("✅ 네이버 API 직접 호출 성공! 실제 상품 데이터 " + fetchedItems.length + "개 매칭 완료.", 'success');
+            } else {
+              const errText = await response.text();
+              logDiagnostic("❌ 네이버 API 호출 거절됨 (HTTP " + response.status + ").", 'error');
+              logDiagnostic("💡 [원인 파악] 네이버 콘솔 '웹 설정'에 'https://ronneyang.github.io' 도메인이 누락되었는지 체크해 보세요!", 'warn');
             }
           } catch (naverErr) {
-            console.warn("[최저가집사] 네이버 OpenAPI 브라우저 직접 호출 실패(CORS 등). 로컬 서버 및 모형 데이터로 안전하게 우회합니다:", naverErr);
+            console.warn("[최저가집사] 네이버 OpenAPI 브라우저 직접 호출 실패(CORS 등):", naverErr);
+            logDiagnostic("❌ 네이버 API 통신 장애 (CORS 또는 네트워크 블록): " + naverErr.message, 'error');
           }
+        } else {
+          logDiagnostic("⚠️ 설정창에 Naver API 키가 입력되지 않았거나 유효하지 않습니다. (5자 미만 또는 Dummy 키)", 'warn');
         }
 
         if (fetchedItems.length === 0) {
           // 로컬 백엔드 서버 조회 시도 (네이버 API 키를 백엔드로 전달하도록 파라미터 매핑 보완)
           try {
+            const activeBackend = getActiveBackendUrl();
+            logDiagnostic("🔄 로컬 백엔드 서버(" + activeBackend + ")에 CORS 안심 중계 요청을 시도합니다...", 'info');
             const clientIdParam = isValidKey(naverClientId) ? `&naverClientId=${encodeURIComponent(naverClientId)}` : '';
             const clientSecretParam = isValidKey(naverClientSecret) ? `&naverClientSecret=${encodeURIComponent(naverClientSecret)}` : '';
-            const res = await fetch(`${getActiveBackendUrl()}/search?keyword=${encodeURIComponent(searchKeyword)}${clientIdParam}${clientSecretParam}`);
+            const res = await fetch(`${activeBackend}/search?keyword=${encodeURIComponent(searchKeyword)}${clientIdParam}${clientSecretParam}`);
             if (res.ok) {
               const data = await res.json();
               fetchedItems = data.results || [];
+              logDiagnostic("✅ 백엔드 중계 성공! " + fetchedItems.length + "개 상품 수집 완료.", 'success');
             } else {
               const errText = await res.text();
               console.warn(`[최저가집사] 백엔드 검색 요청 실패: ${res.status} - ${errText}`);
+              logDiagnostic("❌ 백엔드 응답 에러 (HTTP " + res.status + "): " + errText, 'error');
             }
           } catch (e) {
             console.log("[최저가집사] 백엔드가 오프라인이거나 통신 에러가 발생하여 고품격 Mock 비교 데이터로 우회합니다:", e);
+            logDiagnostic("❌ 백엔드 통신 실패 (백엔드 서버 오프라인 또는 HTTPS Mixed Content 블록): " + e.message, 'error');
           }
         }
 
         if (fetchedItems.length === 0) {
+          logDiagnostic("🚨 실시간 통신 수집이 제한되어 시뮬레이션 데모 데이터 모드로 자동 우회 작동합니다.", 'warn');
           // 데모용 고품질 최저가 카드 리스트 제공 (API 키 미설정 시의 시뮬레이션 모드)
           await new Promise(r => setTimeout(r, 1200));
           fetchedItems = [
