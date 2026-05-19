@@ -1,0 +1,1644 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#090d13">
+  <title>최저가집사 (PriceButler) - Standalone Mobile</title>
+  <style>
+    /* ── 프리미엄 다크 글래스모피즘 CSS 스타일링 ── */
+    @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700&display=swap');
+
+    :root {
+      --bg-color: #090d13;
+      --glass-bg: rgba(255, 255, 255, 0.03);
+      --glass-card: rgba(255, 255, 255, 0.05);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --primary-color: #2ea043;
+      --primary-hover: #3fb950;
+      --text-main: #f0f6fc;
+      --text-muted: #8b949e;
+      --price-green: #2ea043;
+      --price-red: #da3633;
+      --accent-blue: #3b82f6;
+      --font-family: 'Pretendard', -apple-system, sans-serif;
+      --shadow-premium: 0 12px 40px rgba(0, 0, 0, 0.6);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: var(--font-family);
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app-container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      position: relative;
+    }
+
+    /* ── 헤더 영역 ── */
+    .app-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      background: rgba(9, 13, 19, 0.8);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--glass-border);
+      z-index: 100;
+    }
+
+    .header-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-icon {
+      font-size: 26px;
+    }
+
+    .logo-text h1 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.5px;
+    }
+
+    .logo-text .subtitle {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .settings-toggle-btn {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      color: #fff;
+      padding: 8px 14px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 700;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .settings-toggle-btn:active {
+      transform: scale(0.95);
+      background: rgba(255,255,255,0.1);
+    }
+
+    /* ── 3-Segment 슬라이딩 탭 메뉴 ── */
+    .tab-segment-control {
+      display: flex;
+      margin: 12px 20px;
+      padding: 4px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      z-index: 99;
+    }
+
+    .segment-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 10px 0;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .segment-btn.active {
+      background: var(--glass-card);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* ── 메인 컨텐츠 영역 ── */
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      margin-bottom: 120px; /* 바텀시트 가림 방지 */
+    }
+
+    .tab-pane {
+      display: none;
+      width: 100%;
+      height: 100%;
+    }
+
+    .tab-pane.active {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* [모드 1] 카메라 뷰 */
+    .camera-view {
+      flex: 1;
+      background-color: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .camera-placeholder {
+      color: var(--text-muted);
+      font-size: 1.2rem;
+      text-align: center;
+      position: relative;
+      width: 100%;
+      height: 100%;
+      z-index: 2;
+    }
+
+    #camera-stream-video {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 1;
+      display: block;
+      background: #000;
+    }
+
+    .camera-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.85;
+      display: none;
+      z-index: 3;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    /* 스캐너 프레임 & 코너 가이드 */
+    .scanner-frame {
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 260px;
+      height: 260px;
+      border-radius: 16px;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.65);
+    }
+
+    .scanner-line {
+      position: absolute;
+      width: 100%;
+      height: 3px;
+      background: var(--accent-blue);
+      box-shadow: 0 0 12px var(--accent-blue);
+      animation: scan 2.2s linear infinite;
+    }
+
+    .scanner-corner {
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      border: 4px solid var(--accent-blue);
+    }
+
+    .scanner-corner.tl { top: 0; left: 0; border-right: none; border-bottom: none; border-radius: 12px 0 0 0; }
+    .scanner-corner.tr { top: 0; right: 0; border-left: none; border-bottom: none; border-radius: 0 12px 0 0; }
+    .scanner-corner.bl { bottom: 0; left: 0; border-right: none; border-top: none; border-radius: 0 0 0 12px; }
+    .scanner-corner.br { bottom: 0; right: 0; border-left: none; border-top: none; border-radius: 0 0 12px 0; }
+
+    .scanner-instruction {
+      position: absolute;
+      bottom: 12%;
+      left: 5%;
+      right: 5%;
+      color: var(--text-muted);
+      font-size: 12px;
+      line-height: 1.5;
+      text-align: center;
+      padding: 0 16px;
+    }
+
+    @keyframes scan {
+      0% { top: 0; }
+      50% { top: 100%; }
+      100% { top: 0; }
+    }
+
+    /* [모드 2] 갤러리 업로드 뷰 */
+    .gallery-view {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+    }
+
+    .upload-trigger-container {
+      width: 100%;
+      max-width: 340px;
+      background: var(--glass-card);
+      border: 2px dashed var(--glass-border);
+      border-radius: 20px;
+      padding: 36px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .upload-trigger-container:active {
+      border-color: var(--accent-blue);
+      background: rgba(59, 130, 246, 0.05);
+    }
+
+    .upload-icon-wrapper {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    .upload-trigger-container h3 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+
+    .upload-trigger-container p {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+
+    .upload-btn {
+      background: var(--accent-blue);
+      color: #fff;
+      font-weight: 700;
+      font-size: 13px;
+      padding: 10px 24px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+    }
+
+    .image-preview-card {
+      width: 100%;
+      max-width: 320px;
+      border-radius: 16px;
+      overflow: hidden;
+      background: #000;
+      border: 1px solid var(--glass-border);
+      position: relative;
+      display: none;
+    }
+
+    .preview-image {
+      width: 100%;
+      height: 280px;
+      object-fit: cover;
+      opacity: 0.9;
+    }
+
+    .preview-badge {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: var(--primary-color);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+
+    /* [모드 3] 상세 링크 입력 뷰 */
+    .link-view {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+    }
+
+    .url-card-container {
+      width: 100%;
+      max-width: 340px;
+      background: var(--glass-card);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .url-card-header h3 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      margin-top: 8px;
+      margin-bottom: 6px;
+    }
+
+    .url-card-header p {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .card-badge {
+      background: rgba(59, 130, 246, 0.15);
+      color: var(--accent-blue);
+      font-size: 9px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .url-input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .url-input-field {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--glass-border);
+      border-radius: 10px;
+      padding: 12px 36px 12px 12px;
+      color: #fff;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .url-input-field:focus {
+      border-color: var(--primary-color);
+    }
+
+    .clear-input-btn {
+      position: absolute;
+      right: 12px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 18px;
+      cursor: pointer;
+      display: none;
+    }
+
+    .url-search-submit-btn {
+      background: var(--primary-color);
+      color: #fff;
+      border: none;
+      padding: 12px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .url-search-submit-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* ── 하단 바텀 시트 ── */
+    .bottom-sheet {
+      background: rgba(22, 27, 34, 0.9);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      border-top: 1px solid var(--glass-border);
+      padding: 20px 20px 34px 20px;
+      border-radius: 24px 24px 0 0;
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      z-index: 200;
+      transform: translateY(100px); /* 셔터 컨테이너만 살짝 노출 */
+      height: 180px;
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), height 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 -12px 40px rgba(0,0,0,0.65);
+    }
+
+    .bottom-sheet.expanded {
+      transform: translateY(0);
+      height: 180px;
+    }
+
+    .bottom-sheet.full-results {
+      height: 70vh;
+      transform: translateY(0);
+    }
+
+    .sheet-drag-handle {
+      width: 36px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 2px;
+      margin: 0 auto 16px;
+    }
+
+    /* 셔터 캡처 버튼 */
+    .capture-action-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 90px;
+    }
+
+    .capture-trigger-btn {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      background: var(--primary-color);
+      border: 4px solid rgba(255,255,255,0.25);
+      outline: 4px solid var(--primary-color);
+      outline-offset: 3px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.1s;
+    }
+
+    .capture-trigger-btn:active {
+      transform: scale(0.92);
+    }
+
+    .capture-trigger-inner {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: var(--primary-hover);
+    }
+
+    /* 로딩 상태 */
+    .loading-state {
+      display: none;
+      text-align: center;
+      padding: 30px 10px;
+    }
+
+    .loading-spinner {
+      width: 38px;
+      height: 38px;
+      border: 3px solid var(--glass-border);
+      border-top-color: var(--primary-color);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-message {
+      font-size: 13px;
+      color: var(--text-main);
+      font-weight: 600;
+    }
+
+    /* 에러 상태 */
+    .error-state {
+      display: none;
+      text-align: center;
+      padding: 20px 10px;
+    }
+
+    .error-icon {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+
+    .error-state h3 {
+      font-size: 15px;
+      margin-bottom: 6px;
+      color: #fff;
+    }
+
+    .error-state p {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    /* 최저가 비교 결과 리스트 UI */
+    .results-container {
+      display: none;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .results-header-row {
+      margin-bottom: 16px;
+    }
+
+    .search-keyword-badge {
+      display: inline-block;
+      background: var(--glass-card);
+      border: 1px solid var(--glass-border);
+      color: var(--text-muted);
+      font-size: 9px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 20px;
+      margin-bottom: 6px;
+    }
+
+    .results-header-row h2 {
+      font-size: 17px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .results-header-row p {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .results-price-list {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-bottom: 24px;
+    }
+
+    /* 결과 카드 스타일 */
+    .mobile-price-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      padding: 12px;
+      text-decoration: none;
+      color: inherit;
+      transition: border-color 0.2s;
+    }
+
+    .mobile-price-card.gold-rank {
+      background: rgba(46, 160, 67, 0.1);
+      border-color: rgba(46, 160, 67, 0.35);
+    }
+
+    .card-thumb-wrapper {
+      width: 52px;
+      height: 52px;
+      border-radius: 8px;
+      background: #21262d;
+      border: 1px solid var(--glass-border);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .card-thumb {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .card-thumb-placeholder {
+      font-size: 20px;
+    }
+
+    .card-details {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .card-platform {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .gold-rank .card-platform {
+      color: var(--price-green);
+    }
+
+    .card-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-main);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .card-price-info {
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .card-price {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .gold-rank .card-price {
+      color: var(--price-green);
+    }
+
+    .card-shipping {
+      font-size: 9px;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+
+    .primary-sheet-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--glass-border);
+      color: #fff;
+      padding: 12px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      width: 100%;
+      text-align: center;
+      margin-top: 8px;
+    }
+
+    .primary-sheet-btn.reset {
+      background: var(--primary-color);
+      border: none;
+      margin-top: 12px;
+    }
+
+    /* ── 설정 모달 ── */
+    .settings-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding: 20px;
+    }
+
+    .settings-modal {
+      background: #161b22;
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 360px;
+      overflow: hidden;
+      box-shadow: var(--shadow-premium);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--glass-border);
+    }
+
+    .modal-header h2 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .modal-close-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    .modal-body {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .modal-instruction {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .input-group label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .input-guide {
+      font-size: 10px;
+      color: var(--text-muted);
+      line-height: 1.4;
+      margin-top: 3px;
+    }
+
+    .input-group input {
+      background: rgba(0,0,0,0.25);
+      border: 1px solid var(--glass-border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: #fff;
+      font-size: 12px;
+      outline: none;
+      font-family: monospace;
+    }
+
+    .input-group input:focus {
+      border-color: var(--accent-blue);
+    }
+
+    .modal-footer {
+      padding: 16px 20px;
+      border-top: 1px solid var(--glass-border);
+    }
+
+    .modal-save-btn {
+      background: var(--primary-color);
+      color: #fff;
+      border: none;
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HTML5 Native 디바이스 숨김 파일 입력 단자 (capture 속성을 활용한 실제 폰카메라 즉시 연동!) -->
+  <input type="file" id="camera-file-input" accept="image/*" capture="environment" style="display: none;">
+  <input type="file" id="gallery-file-input" accept="image/*" style="display: none;">
+
+  <div class="app-container">
+    
+    <!-- ── 상단 헤더 영역 ── -->
+    <header class="app-header">
+      <div class="header-logo">
+        <span class="logo-icon">🧙‍♂️</span>
+        <div class="logo-text">
+          <h1>최저가집사</h1>
+          <span class="subtitle">PriceButler Portable</span>
+        </div>
+      </div>
+      <button class="settings-toggle-btn" id="open-settings-btn">⚙️ API 설정</button>
+    </header>
+
+    <!-- ── 상단 3-Segment 탭 컨트롤 ── -->
+    <div class="tab-segment-control">
+      <button class="segment-btn active" data-tab="camera">📷 실시간 촬영</button>
+      <button class="segment-btn" data-tab="gallery">🖼️ 갤러리 업로드</button>
+      <button class="segment-btn" data-tab="link">🔗 상세 링크 입력</button>
+    </div>
+
+    <!-- ── 메인 콘텐츠 패널 ── -->
+    <main class="main-content">
+      
+      <!-- [모드 1] 실시간 촬영 -->
+      <div class="tab-pane active" id="pane-camera">
+        <div class="camera-view" id="camera-view-box">
+          <video id="camera-stream-video" autoplay playsinline muted></video>
+          <div class="camera-placeholder" id="camera-placeholder-ui">
+            <div class="scanner-frame">
+              <div class="scanner-line"></div>
+              <div class="scanner-corner tl"></div>
+              <div class="scanner-corner tr"></div>
+              <div class="scanner-corner bl"></div>
+              <div class="scanner-corner br"></div>
+            </div>
+            <p class="scanner-instruction">오프라인 상품의 라벨이나 전면을 프레임 안에 맞추고 아래 셔터를 누르세요</p>
+          </div>
+          <img src="" class="camera-image" id="camera-captured-preview" alt="Captured">
+        </div>
+      </div>
+
+      <!-- [모드 2] 갤러리 업로드 -->
+      <div class="tab-pane" id="pane-gallery">
+        <div class="gallery-view">
+          <div class="upload-trigger-container" id="gallery-trigger-box">
+            <div class="upload-icon-wrapper">🌄</div>
+            <h3>스마트폰 앨범에서 사진 가져오기</h3>
+            <p>갤러리에 저장된 상품 영수증, 캡처본 또는 직접 찍어둔 상품 사진을 선택하세요.</p>
+            <button class="upload-btn">사진 선택</button>
+          </div>
+          <div class="image-preview-card" id="gallery-preview-card">
+            <img src="" class="preview-image" id="gallery-preview-img" alt="Preview">
+            <span class="preview-badge">AI 분석 대기 완료</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- [모드 3] 상세 링크 입력 -->
+      <div class="tab-pane" id="pane-link">
+        <div class="link-view">
+          <div class="url-card-container">
+            <div class="url-card-header">
+              <span class="card-badge">Coupang & Naver</span>
+              <h3>상세페이지 주소(URL)로 검색</h3>
+              <p>오프라인 몰에서 발견한 상품의 웹 상세 주소 링크가 있다면 아래에 붙여넣어 주세요.</p>
+            </div>
+            
+            <div class="url-input-wrapper">
+              <input 
+                type="text" 
+                class="url-input-field" 
+                id="url-input-field" 
+                placeholder="https://www.coupang.com/vp/products/..." 
+              />
+              <button class="clear-input-btn" id="clear-url-input-btn">&times;</button>
+            </div>
+
+            <button 
+              class="url-search-submit-btn" 
+              id="url-search-submit-btn" 
+              disabled
+            >
+              🧙‍♂️ 최저가집사 분석 시작
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- ── 하단 바텀 시트 ── -->
+    <div class="bottom-sheet expanded" id="price-bottom-sheet">
+      <div class="sheet-drag-handle"></div>
+
+      <!-- 모드 1 카메라 셔터 레이아웃 -->
+      <div class="capture-action-container" id="camera-shutter-container">
+        <button class="capture-trigger-btn" id="camera-shutter-btn">
+          <div class="capture-trigger-inner"></div>
+        </button>
+      </div>
+
+      <!-- 로딩 상태 영역 -->
+      <div class="loading-state" id="loading-state-ui">
+        <div class="loading-spinner"></div>
+        <p class="loading-message" id="loading-message-text">🤖 AI 비전이 사진에서 키워드를 파싱하는 중...</p>
+      </div>
+
+      <!-- 에러 상태 영역 -->
+      <div class="error-state" id="error-state-ui">
+        <div class="error-icon">⚠️</div>
+        <h3 id="error-title-text">분석에 실패했습니다</h3>
+        <p id="error-body-text">서버와의 통신 도중 에러가 발생했습니다.</p>
+        <button class="primary-sheet-btn" id="error-retry-btn">다시 시도하기</button>
+      </div>
+
+      <!-- 결과 비교 리스트 영역 -->
+      <div class="results-container" id="results-container-ui">
+        <div class="results-header-row">
+          <div class="search-keyword-badge">AI 검색어</div>
+          <h2 id="result-keyword-text">농심 신라면 120g</h2>
+          <p>실시간 가격순 정렬 (배송비 포함)</p>
+        </div>
+
+        <div class="results-price-list" id="results-price-list-box">
+          <!-- JS 렌더링 카드 주입 영역 -->
+        </div>
+
+        <button class="primary-sheet-btn reset" id="result-reset-btn">
+          다른 상품 다시 찾기
+        </button>
+      </div>
+
+    </div>
+
+    <!-- ── API 설정 모달 ── -->
+    <div class="settings-backdrop" id="settings-backdrop-ui">
+      <div class="settings-modal">
+        <div class="modal-header">
+          <h2>⚙️ 최저가집사 API 설정</h2>
+          <button class="modal-close-btn" id="close-settings-btn">&times;</button>
+        </div>
+        
+        <div class="modal-body">
+          <p class="modal-instruction">스마트폰 단독으로 이미지 인식을 사용하기 위한 API 인증키를 설정합니다. 비워둘 경우 스마트한 모형(Mock) 테스팅이 제공됩니다.</p>
+          
+          <div class="input-group">
+            <label>Google Cloud Vision API Key</label>
+            <input type="text" id="setting-vision-key" placeholder="AIzaSyA...">
+            <span class="input-guide">
+              * 발급 경로: <a href="https://console.cloud.google.com" target="_blank" style="color: var(--accent-blue); text-decoration: none;">구글 클라우드 콘솔</a> 로그인 &rarr; 새 프로젝트 생성 &rarr; Cloud Vision API 사용 설정 &rarr; 사용자 인증 정보에서 API 키 생성.
+            </span>
+          </div>
+
+          <div class="input-group">
+            <label>Naver Search API Client ID</label>
+            <input type="text" id="setting-naver-id" placeholder="Client ID 입력">
+            <span class="input-guide">
+              * 발급 경로: <a href="https://developers.naver.com" target="_blank" style="color: var(--accent-blue); text-decoration: none;">네이버 개발자 센터</a> &rarr; Application 등록 &rarr; 사용 API에서 "검색" 선택 &rarr; 비로그인 오픈 API 환경에서 "웹 설정" 추가 후 발급.
+            </span>
+          </div>
+
+          <div class="input-group">
+            <label>Naver Search API Client Secret</label>
+            <input type="text" id="setting-naver-secret" placeholder="Client Secret 입력">
+          </div>
+
+          <div class="input-group" style="margin-top: 10px; border-top: 1px dashed var(--glass-border); padding-top: 12px;">
+            <label>로컬 백엔드 서버 주소 (CORS 우회용 프록시)</label>
+            <input type="text" id="setting-backend-url" placeholder="http://localhost:3000">
+            <span class="input-guide">
+              * 스마트폰/에뮬레이터 실기기 테스트 시 PC의 실제 IP를 입력하세요 (예: <code>http://192.168.0.15:3000</code>).
+            </span>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="modal-save-btn" id="save-settings-btn">💾 설정 저장하기</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ── 상태 관리 (State) ──
+    let activeTab = 'camera';
+    let status = 'IDLE'; // IDLE, ANALYZING, SEARCHING, DONE, ERROR
+    let photoUrl = null;
+    let keyword = '';
+    let results = [];
+    let errorMessage = '';
+    let cameraStream = null; // WebRTC 카메라 스트림 변수
+
+    // API 키 관리 및 백엔드 서버 설정
+    let visionApiKey = localStorage.getItem('visionApiKey') || '';
+    let naverClientId = localStorage.getItem('naverClientId') || '';
+    let naverClientSecret = localStorage.getItem('naverClientSecret') || '';
+    let backendUrl = localStorage.getItem('backendUrl') || 'http://localhost:3000';
+
+    // API 키 유효성 검사기 (공백, literal null/undefined, dummy 키 완전 필터링)
+    function isValidKey(key) {
+      if (!key) return false;
+      const k = key.trim().toLowerCase();
+      return k !== '' && k !== 'null' && k !== 'undefined' && k !== 'dummy' && k.length > 5;
+    }
+
+    // DOM 요소 캐싱
+    const cameraStreamVideo = document.getElementById('camera-stream-video');
+    const tabBtns = document.querySelectorAll('.segment-btn');
+    const tabPanes = document.querySelectorAll('.tab-pane');
+    const cameraFileInput = document.getElementById('camera-file-input');
+    const galleryFileInput = document.getElementById('gallery-file-input');
+    const cameraPlaceholderUi = document.getElementById('camera-placeholder-ui');
+    const cameraCapturedPreview = document.getElementById('camera-captured-preview');
+    const galleryTriggerBox = document.getElementById('gallery-trigger-box');
+    const galleryPreviewCard = document.getElementById('gallery-preview-card');
+    const galleryPreviewImg = document.getElementById('gallery-preview-img');
+    const urlInputField = document.getElementById('url-input-field');
+    const clearUrlInputBtn = document.getElementById('clear-url-input-btn');
+    const urlSearchSubmitBtn = document.getElementById('url-search-submit-btn');
+    
+    const priceBottomSheet = document.getElementById('price-bottom-sheet');
+    const cameraShutterContainer = document.getElementById('camera-shutter-container');
+    const loadingStateUi = document.getElementById('loading-state-ui');
+    const loadingMessageText = document.getElementById('loading-message-text');
+    const errorStateUi = document.getElementById('error-state-ui');
+    const resultsContainerUi = document.getElementById('results-container-ui');
+    const resultsPriceListBox = document.getElementById('results-price-list-box');
+    
+    const openSettingsBtn = document.getElementById('open-settings-btn');
+    const closeSettingsBtn = document.getElementById('close-settings-btn');
+    const settingsBackdropUi = document.getElementById('settings-backdrop-ui');
+    const saveSettingsBtn = document.getElementById('save-settings-btn');
+    
+    // 설정 인풋들
+    const settingVisionKey = document.getElementById('setting-vision-key');
+    const settingNaverId = document.getElementById('setting-naver-id');
+    const settingNaverSecret = document.getElementById('setting-naver-secret');
+    const settingBackendUrl = document.getElementById('setting-backend-url');
+
+    // ── 카메라 스트리밍 제어 (WebRTC) ──
+    async function startCameraStream() {
+      if (activeTab !== 'camera') return;
+      if (cameraStream) stopCameraStream();
+
+      try {
+        const constraints = {
+          video: {
+            facingMode: { ideal: 'environment' }
+          },
+          audio: false
+        };
+        cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+        cameraStreamVideo.srcObject = cameraStream;
+        cameraStreamVideo.style.display = 'block';
+        cameraPlaceholderUi.style.display = 'block';
+        cameraCapturedPreview.style.display = 'none';
+      } catch (err) {
+        console.error('Camera stream access failed:', err);
+        // 사용자 권한 거부 시 파일 업로드 방식으로 자동 연계 대기
+        cameraStreamVideo.style.display = 'none';
+      }
+    }
+
+    function stopCameraStream() {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+      }
+      if (cameraStreamVideo) {
+        cameraStreamVideo.srcObject = null;
+      }
+    }
+
+    // ── 초기화 로직 ──
+    window.addEventListener('DOMContentLoaded', () => {
+      // 로컬 스토리지 데이터 인풋 매핑
+      settingVisionKey.value = visionApiKey;
+      settingNaverId.value = naverClientId;
+      settingNaverSecret.value = naverClientSecret;
+      settingBackendUrl.value = backendUrl;
+      
+      updateStatusUi();
+      startCameraStream();
+    });
+
+    // ⚙️ 설정창 열고 닫기
+    openSettingsBtn.addEventListener('click', () => {
+      stopCameraStream(); // 설정 창을 열면 카메라 일시 정지하여 전력 절약
+      settingsBackdropUi.style.display = 'flex';
+    });
+    closeSettingsBtn.addEventListener('click', () => {
+      settingsBackdropUi.style.display = 'none';
+      if (activeTab === 'camera') startCameraStream(); // 설정 닫으면 다시 실시간 카메라 재생
+    });
+    saveSettingsBtn.addEventListener('click', () => {
+      visionApiKey = settingVisionKey.value.trim();
+      naverClientId = settingNaverId.value.trim();
+      naverClientSecret = settingNaverSecret.value.trim();
+      backendUrl = settingBackendUrl.value.trim() || 'http://localhost:3000';
+      
+      localStorage.setItem('visionApiKey', visionApiKey);
+      localStorage.setItem('naverClientId', naverClientId);
+      localStorage.setItem('naverClientSecret', naverClientSecret);
+      localStorage.setItem('backendUrl', backendUrl);
+      
+      settingsBackdropUi.style.display = 'none';
+      alert('설정이 안전하게 보관되었습니다!');
+      if (activeTab === 'camera') startCameraStream();
+    });
+
+    // ── 3-Segment 탭 컨트롤 핸들러 ──
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        tabBtns.forEach(b => b.classList.remove('active'));
+        tabPanes.forEach(p => p.classList.remove('active'));
+        
+        btn.classList.add('active');
+        const targetTab = btn.getAttribute('data-tab');
+        activeTab = targetTab;
+        document.getElementById(`pane-${targetTab}`).classList.add('active');
+        
+        stopCameraStream(); // 다른 탭 이동 시 무조건 리소스 완전 회수
+        resetSearchFlow();
+        
+        if (targetTab === 'camera') {
+          startCameraStream(); // 실시간 촬영 탭에 왔을 때만 카메라 부팅
+        }
+      });
+    });
+
+    // ── 상태 전이에 따른 UI 신속 업데이트 엔진 ──
+    function updateStatusUi() {
+      // 1. 모든 바텀 드로워 뷰 일시정지
+      cameraShutterContainer.style.display = 'none';
+      loadingStateUi.style.display = 'none';
+      errorStateUi.style.display = 'none';
+      resultsContainerUi.style.display = 'none';
+
+      priceBottomSheet.classList.remove('expanded', 'full-results');
+
+      if (status === 'IDLE') {
+        if (activeTab === 'camera') {
+          priceBottomSheet.classList.add('expanded');
+          cameraShutterContainer.style.display = 'flex';
+        }
+      } else if (status === 'ANALYZING' || status === 'SEARCHING') {
+        priceBottomSheet.classList.add('expanded');
+        loadingStateUi.style.display = 'block';
+        loadingMessageText.textContent = (status === 'ANALYZING') 
+          ? '🤖 AI 비전이 사진에서 키워드를 파싱하는 중...' 
+          : '⚡ 국내 전체 온라인 몰의 최신 최저가를 매칭 중...';
+      } else if (status === 'ERROR') {
+        priceBottomSheet.classList.add('expanded');
+        errorStateUi.style.display = 'block';
+        document.getElementById('error-body-text').textContent = errorMessage;
+      } else if (status === 'DONE') {
+        priceBottomSheet.classList.add('full-results');
+        resultsContainerUi.style.display = 'flex';
+        document.getElementById('result-keyword-text').textContent = keyword;
+        
+        renderResultsList();
+      }
+    }
+
+    function resetSearchFlow() {
+      status = 'IDLE';
+      photoUrl = null;
+      keyword = '';
+      results = [];
+      errorMessage = '';
+      
+      // 파일 인풋들 값 비우기 (두 번째 선택 및 동일 파일 업로드 안 되는 문제 완벽 조치!)
+      cameraFileInput.value = '';
+      galleryFileInput.value = '';
+      
+      // 이미지 미리보기 리셋
+      cameraPlaceholderUi.style.display = 'block';
+      cameraCapturedPreview.style.display = 'none';
+      cameraCapturedPreview.src = '';
+      
+      galleryTriggerBox.style.display = 'block';
+      galleryPreviewCard.style.display = 'none';
+      galleryPreviewImg.src = '';
+      
+      urlInputField.value = '';
+      urlSearchSubmitBtn.disabled = true;
+      clearUrlInputBtn.style.display = 'none';
+
+      // 만약 카메라 탭이면 다시 실시간 카메라 스트리밍 시작
+      if (activeTab === 'camera') {
+        startCameraStream();
+      } else {
+        stopCameraStream();
+      }
+
+      updateStatusUi();
+    }
+
+    // ── 모드 1: 실시간 촬영 트리거 (WebRTC 캡처 또는 파일 폴백) ──
+    document.getElementById('camera-shutter-btn').addEventListener('click', () => {
+      if (cameraStream) {
+        captureLiveFrame();
+      } else {
+        cameraFileInput.click();
+      }
+    });
+
+    function captureLiveFrame() {
+      const videoWidth = cameraStreamVideo.videoWidth;
+      const videoHeight = cameraStreamVideo.videoHeight;
+      if (!videoWidth || !videoHeight) return;
+
+      // 오프스크린 캔버스 생성 및 렌더링
+      const canvas = document.createElement('canvas');
+      canvas.width = videoWidth;
+      canvas.height = videoHeight;
+      const ctx = canvas.getContext('2d');
+      
+      ctx.drawImage(cameraStreamVideo, 0, 0, videoWidth, videoHeight);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      
+      // 리소스 점유 방지를 위한 스트림 정지
+      stopCameraStream();
+      
+      // 인앱 스냅샷 뷰 전환
+      cameraCapturedPreview.src = dataUrl;
+      cameraCapturedPreview.style.display = 'block';
+      cameraPlaceholderUi.style.display = 'none';
+      cameraStreamVideo.style.display = 'none';
+      
+      photoUrl = dataUrl;
+      
+      // AI 비전 분석 시작
+      runAiDetection(dataUrl);
+    }
+
+    cameraFileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      processSelectedImage(file, 'camera');
+    });
+
+    // ── 모드 2: 앨범 선택 트리거 ──
+    galleryTriggerBox.addEventListener('click', () => {
+      galleryFileInput.click();
+    });
+
+    galleryFileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      processSelectedImage(file, 'gallery');
+    });
+
+    // 이미지 파일을 읽고 AI 탐색 흐름 실행
+    function processSelectedImage(file, mode) {
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const base64Data = event.target.result;
+        photoUrl = base64Data;
+
+        if (mode === 'camera') {
+          cameraPlaceholderUi.style.display = 'none';
+          cameraCapturedPreview.src = base64Data;
+          cameraCapturedPreview.style.display = 'block';
+        } else {
+          galleryTriggerBox.style.display = 'none';
+          galleryPreviewImg.src = base64Data;
+          galleryPreviewCard.style.display = 'block';
+        }
+
+        // 실시간 분석 돌입
+        await runAiDetection(base64Data);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // ── 모드 3: URL 입력 및 초기 설정 ──
+    urlInputField.addEventListener('input', () => {
+      const val = urlInputField.value.trim();
+      if (val) {
+        clearUrlInputBtn.style.display = 'block';
+        urlSearchSubmitBtn.disabled = false;
+      } else {
+        clearUrlInputBtn.style.display = 'none';
+        urlSearchSubmitBtn.disabled = true;
+      }
+    });
+
+    clearUrlInputBtn.addEventListener('click', () => {
+      urlInputField.value = '';
+      clearUrlInputBtn.style.display = 'none';
+      urlSearchSubmitBtn.disabled = true;
+    });
+
+    urlSearchSubmitBtn.addEventListener('click', async () => {
+      const url = urlInputField.value.trim();
+      if (!url) return;
+
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        alert('올바른 웹 상품 주소(http:// 또는 https://)를 입력해주세요.');
+        return;
+      }
+
+      await runUrlMetadataDetection(url);
+    });
+
+    // ── 핵심 AI 비전 키워드 추출 & 실시간 최저가 탐색 스크립트 ──
+    async function runAiDetection(base64Image) {
+      status = 'ANALYZING';
+      updateStatusUi();
+
+      try {
+        let detectedKeyword = "";
+
+        if (isValidKey(visionApiKey)) {
+          try {
+            // Google Vision API 실시간 통신
+            const cleanBase64 = base64Image.split(',')[1];
+            const visionApiUrl = `https://vision.googleapis.com/v1/images:annotate?key=${visionApiKey}`;
+            const payload = {
+              requests: [{
+                image: { content: cleanBase64 },
+                features: [
+                  { type: "WEB_DETECTION", maxResults: 10 },
+                  { type: "TEXT_DETECTION", maxResults: 1 }
+                ]
+              }]
+            };
+
+            const res = await fetch(visionApiUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.error) throw new Error("Vision API: " + data.error.message);
+
+            const webEntities = data.responses[0].webDetection?.webEntities || [];
+            const textAnnotations = data.responses[0].textAnnotations || [];
+            const genericWords = ['skin care', 'hair care', 'shampoo', 'conditioner', 'cosmetics', 'product', 'bottle', 'lotion', 'cream', 'beauty', 'liquid'];
+
+            const koreanEntities = webEntities.filter(e => e.description && /[가-힣]/.test(e.description) && e.score >= 0.3);
+            const otherEntities  = webEntities.filter(e => {
+              if (!e.description || e.score < 0.5) return false;
+              return !genericWords.some(g => e.description.toLowerCase() === g);
+            });
+
+            if (koreanEntities.length > 0) {
+              detectedKeyword = koreanEntities.slice(0, 2).map(e => e.description).join(' ');
+            } else if (otherEntities.length > 0) {
+              detectedKeyword = otherEntities.slice(0, 2).map(e => e.description).join(' ');
+            } else if (textAnnotations.length > 0) {
+              const fullText = textAnnotations[0].description;
+              const koreanWords = fullText.match(/[가-힣]{2,}/g) || [];
+              detectedKeyword = koreanWords.length > 0 ? koreanWords.slice(0, 4).join(' ') : fullText.split('\n')[0].trim();
+            }
+          } catch (visionErr) {
+            console.warn("[최저가집사] Google Vision API 연동 실패. 모형 데이터로 안전하게 대체합니다:", visionErr);
+            detectedKeyword = "";
+          }
+        }
+
+        if (!detectedKeyword) {
+          console.warn("[최저가집사] API 키가 없어 데모 시뮬레이션 데이터를 공급합니다.");
+          await new Promise(r => setTimeout(r, 1500));
+          detectedKeyword = "농심 신라면 120g 5개입 멀티팩";
+        }
+
+        keyword = detectedKeyword;
+        status = 'SEARCHING';
+        updateStatusUi();
+
+        await performPriceSearch(detectedKeyword);
+
+      } catch (err) {
+        console.error("AI Detection Error:", err);
+        status = 'ERROR';
+        errorMessage = err.message || "이미지 분석 중 기술적인 한계로 오류가 발생했습니다.";
+        updateStatusUi();
+      }
+    }
+
+    // URL에서 검색에 유용한 실제 상품 한글 키워드 추출 (백엔드 오프라인 시의 지능형 폴백 장치)
+    function extractProductKeywordFromUrl(url) {
+      try {
+        const decoded = decodeURIComponent(url);
+        
+        // 1. URL의 쿼리 스트링 파라미터 중 q, query, keyword, kwd 등에서 한글 검색어 추출 시도
+        try {
+          const urlObj = new URL(url);
+          const searchParams = urlObj.searchParams;
+          for (const param of ['q', 'query', 'keyword', 'kwd', 'title']) {
+            const val = searchParams.get(param);
+            if (val && /[가-힣]/.test(val)) {
+              return val.trim();
+            }
+          }
+        } catch (urlErr) {
+          console.warn("URL 객체 분석 실패:", urlErr);
+        }
+
+        // 2. URL 경로명(path)에서 한글 형태의 상품명 추출 시도
+        const pathWords = decoded.match(/[가-힣0-9a-zA-Z]{2,}/g);
+        if (pathWords && pathWords.length > 0) {
+          // 사이트명 및 무의미한 단어 제외 필터링
+          const filtered = pathWords.filter(w => {
+            const word = w.toLowerCase();
+            return !['coupang', 'vp', 'products', 'naver', 'shopping', 'smartstore', '11st', 'gmarket', 'co', 'kr', 'com', 'http', 'https', 'www', '쿠팡', '네이버', '쇼핑', '상품', '상세', '스마트스토어', '브랜드', '11번가', '지마켓'].includes(word);
+          });
+          if (filtered.length > 0) {
+            // 한글 단어 위주로 필터링하여 키워드 생성
+            const koreanOnly = filtered.filter(w => /[가-힣]/.test(w));
+            if (koreanOnly.length > 0) {
+              return koreanOnly.slice(0, 4).join(' ');
+            }
+            return filtered.slice(0, 4).join(' ');
+          }
+        }
+      } catch (e) {
+        console.warn("URL에서 키워드 추출 실패:", e);
+      }
+      
+      // 3. 추출 실패 시 도메인별 중립 단어로 폴백
+      if (url.includes("coupang.com")) return "입력한 쿠팡 상품";
+      if (url.includes("11st.co.kr")) return "입력한 11번가 상품";
+      if (url.includes("naver.com")) return "입력한 네이버 상품";
+      return "입력한 상세페이지 상품";
+    }
+
+    // URL 상세페이지 파싱 및 가격 비교 실행
+    async function runUrlMetadataDetection(url) {
+      status = 'ANALYZING';
+      updateStatusUi();
+
+      try {
+        let metaTitle = "";
+        
+        try {
+          const res = await fetch(`${backendUrl}/search/parse-url?url=${encodeURIComponent(url)}`);
+          if (res.ok) {
+            const data = await res.json();
+            metaTitle = data.title;
+            if (data.imageUrl) {
+              photoUrl = data.imageUrl; // 주소에서 긁어온 실제 상품 이미지 저장
+            }
+          }
+        } catch (e) {
+          console.log("[최저가집사] 백엔드가 오프라인 상태입니다. 모바일 디바이스 가상 파싱을 작동합니다.");
+        }
+
+        if (!metaTitle) {
+          await new Promise(r => setTimeout(r, 1200));
+          metaTitle = extractProductKeywordFromUrl(url);
+        }
+
+        keyword = metaTitle;
+        status = 'SEARCHING';
+        updateStatusUi();
+
+        await performPriceSearch(metaTitle);
+
+      } catch (err) {
+        console.error("URL Parsing Error:", err);
+        status = 'ERROR';
+        errorMessage = err.message || "주소를 해석할 수 없습니다. 유효한 상세페이지 주소인지 대조해 주세요.";
+        updateStatusUi();
+      }
+    }
+
+    // 다중 쇼핑몰 최저가 실시간 검색 수행
+    async function performPriceSearch(searchKeyword) {
+      try {
+        let fetchedItems = [];
+
+        if (isValidKey(naverClientId) && isValidKey(naverClientSecret)) {
+          try {
+            // 네이버 쇼핑 OpenAPI 실시간 기기 다이렉트 통신 (CORS bypass/WebView 대응)
+            const query = encodeURIComponent(searchKeyword);
+            const url = `https://openapi.naver.com/v1/search/shop.json?query=${query}&display=15&sort=asc`;
+
+            const response = await fetch(url, {
+              headers: {
+                'X-Naver-Client-Id': naverClientId,
+                'X-Naver-Client-Secret': naverClientSecret
+              }
+            });
+
+            if (response.ok) {
+              const data = await response.json();
+              fetchedItems = (data.items || []).map(item => ({
+                platform: item.mallName || '네이버',
+                title: item.title.replace(/<[^>]+>/g, ''), // HTML 태그 제거
+                price: parseInt(item.lprice, 10) || 0,
+                shippingFee: 0,
+                link: item.link,
+                imageUrl: item.image
+              }));
+            }
+          } catch (naverErr) {
+            console.warn("[최저가집사] 네이버 OpenAPI 브라우저 직접 호출 실패(CORS 등). 로컬 서버 및 모형 데이터로 안전하게 우회합니다:", naverErr);
+          }
+        }
+
+        if (fetchedItems.length === 0) {
+          // 로컬 백엔드 서버 조회 시도 (네이버 API 키를 백엔드로 전달하도록 파라미터 매핑 보완)
+          try {
+            const clientIdParam = isValidKey(naverClientId) ? `&naverClientId=${encodeURIComponent(naverClientId)}` : '';
+            const clientSecretParam = isValidKey(naverClientSecret) ? `&naverClientSecret=${encodeURIComponent(naverClientSecret)}` : '';
+            const res = await fetch(`${backendUrl}/search?keyword=${encodeURIComponent(searchKeyword)}${clientIdParam}${clientSecretParam}`);
+            if (res.ok) {
+              const data = await res.json();
+              fetchedItems = data.results || [];
+            } else {
+              const errText = await res.text();
+              console.warn(`[최저가집사] 백엔드 검색 요청 실패: ${res.status} - ${errText}`);
+            }
+          } catch (e) {
+            console.log("[최저가집사] 백엔드가 오프라인이거나 통신 에러가 발생하여 고품격 Mock 비교 데이터로 우회합니다:", e);
+          }
+        }
+
+        if (fetchedItems.length === 0) {
+          // 데모용 고품질 최저가 카드 리스트 제공 (API 키 미설정 시의 시뮬레이션 모드)
+          await new Promise(r => setTimeout(r, 1200));
+          fetchedItems = [
+            { 
+              platform: "쿠팡", 
+              title: `[쿠팡] ${searchKeyword} (로켓배송)`, 
+              price: 4200, 
+              shippingFee: 0, 
+              link: `https://www.coupang.com/np/search?q=${encodeURIComponent(searchKeyword)}`, 
+              imageUrl: "" 
+            },
+            { 
+              platform: "11번가", 
+              title: `[11번가] ${searchKeyword} 특가팩`, 
+              price: 3800, 
+              shippingFee: 3000, 
+              link: `https://search.11st.co.kr/Search.tmall?kwd=${encodeURIComponent(searchKeyword)}`, 
+              imageUrl: "" 
+            },
+            { 
+              platform: "네이버", 
+              title: `[네이버 쇼핑] ${searchKeyword} 최저가 보증`, 
+              price: 4500, 
+              shippingFee: 3000, 
+              link: `https://search.shopping.naver.com/search/all?query=${encodeURIComponent(searchKeyword)}`, 
+              imageUrl: "" 
+            },
+            { 
+              platform: "G마켓", 
+              title: `[G마켓] ${searchKeyword} 무료배송`, 
+              price: 5400, 
+              shippingFee: 0, 
+              link: `https://search.gmarket.co.kr/search.aspx?selecturl=total&skey=${encodeURIComponent(searchKeyword)}`, 
+              imageUrl: "" 
+            }
+          ];
+        }
+
+        // 전체 총합 가격순 오름차순 정렬
+        results = fetchedItems.sort((a, b) => (a.price + a.shippingFee) - (b.price + b.shippingFee));
+        status = 'DONE';
+        updateStatusUi();
+
+      } catch (err) {
+        console.error("Pricing Flow Error:", err);
+        status = 'ERROR';
+        errorMessage = err.message || "온라인 최저가를 검색하고 가져오는 과정에서 통신 오류가 생겼습니다.";
+        updateStatusUi();
+      }
+    }
+
+    // ── 결과 렌더링 엔진 ──
+    function renderResultsList() {
+      resultsPriceListBox.innerHTML = '';
+      
+      if (results.length === 0) {
+        resultsPriceListBox.innerHTML = `<div class="empty-results">😔 매칭되는 온라인 쇼핑몰 최저가를 찾지 못했습니다.</div>`;
+        return;
+      }
+
+      results.forEach((item, index) => {
+        const fallbackIcon = '🛍️';
+        const isGold = index === 0;
+        
+        const cardHtml = `
+          <a href="${item.link}" target="_blank" rel="noopener noreferrer" class="mobile-price-card ${isGold ? 'gold-rank' : ''}">
+            <div class="card-thumb-wrapper">
+              ${item.imageUrl ? `<img src="${item.imageUrl}" class="card-thumb" alt="Product">` : `<span class="card-thumb-placeholder">${fallbackIcon}</span>`}
+            </div>
+            <div class="card-details">
+              <span class="card-platform">${item.platform} ${isGold ? '👑 최저가' : ''}</span>
+              <h4 class="card-title" title="${item.title}">${item.title}</h4>
+            </div>
+            <div class="card-price-info">
+              <div class="card-price">${(item.price + item.shippingFee).toLocaleString()}원</div>
+              <div class="card-shipping">배송비 ${item.shippingFee === 0 ? '무료' : `${item.shippingFee.toLocaleString()}원`}</div>
+            </div>
+          </a>
+        `;
+        resultsPriceListBox.innerHTML += cardHtml;
+      });
+    }
+
+    // 다시 찾기 및 리셋
+    document.getElementById('result-reset-btn').addEventListener('click', resetSearchFlow);
+    document.getElementById('error-retry-btn').addEventListener('click', resetSearchFlow);
+  </script>
+</body>
+</html>
