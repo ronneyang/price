@@ -1199,15 +1199,37 @@
     });
 
     urlSearchSubmitBtn.addEventListener('click', async () => {
-      const url = urlInputField.value.trim();
-      if (!url) return;
+      let rawInput = urlInputField.value.trim();
+      if (!rawInput) return;
 
-      if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        alert('올바른 웹 상품 주소(http:// 또는 https://)를 입력해주세요.');
+      const urlRegex = /(https?:\/\/[^\s]+)/gi;
+      const urlMatch = rawInput.match(urlRegex);
+      
+      if (!urlMatch) {
+        alert('올바른 웹 상품 주소(http:// 또는 https://)가 포함되어야 합니다.');
+        return;
+      }
+      
+      const targetUrl = urlMatch[0];
+      
+      // 만약 주소 앞뒤에 상품명 텍스트가 같이 붙여넣어진 경우 (쿠팡 앱 공유하기 버튼 양식)
+      let extractedTitle = rawInput.replace(targetUrl, "").trim();
+      // 각종 노이즈 단어 제거
+      extractedTitle = extractedTitle
+        .replace(/[\n\r,\[\]\(\)]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+      
+      if (extractedTitle && extractedTitle.length > 2) {
+        logDiagnostic("✨ 공유 텍스트에서 진짜 상품명 검출 성공: " + extractedTitle, 'success');
+        keyword = extractedTitle;
+        status = 'SEARCHING';
+        updateStatusUi();
+        await performPriceSearch(extractedTitle);
         return;
       }
 
-      await runUrlMetadataDetection(url);
+      await runUrlMetadataDetection(targetUrl);
     });
 
     // 흔히 발생하는 모바일 카메라 촬영 OCR 오인식 및 브랜드 약어 지능형 교정 사전
