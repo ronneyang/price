@@ -1379,6 +1379,37 @@
         }
 
         if (!metaTitle) {
+          try {
+            logDiagnostic("🌐 기기 자체 웹 데이터 해석기를 가동합니다 (단축 링크 우회 추적 중)...", 'info');
+            const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+            const proxyRes = await fetch(proxyUrl);
+            if (proxyRes.ok) {
+              const htmlText = await proxyRes.text();
+              const titleMatch = htmlText.match(/<title>([^<]+)<\/title>/i);
+              if (titleMatch && titleMatch[1]) {
+                let parsedTitle = titleMatch[1].trim();
+                parsedTitle = parsedTitle
+                  .replace(" - 쿠팡", "")
+                  .replace(" : 네이버 쇼핑", "")
+                  .replace("네이버 쇼핑", "")
+                  .replace(" : 스마트스토어", "")
+                  .trim();
+                  
+                metaTitle = parsedTitle;
+                logDiagnostic("✅ 단축 주소 추적 성공! 상품명: " + metaTitle, 'success');
+              }
+              
+              const imageMatch = htmlText.match(/<meta\s+property="og:image"\s+content="([^"]+)"/i);
+              if (imageMatch && imageMatch[1]) {
+                photoUrl = imageMatch[1];
+              }
+            }
+          } catch (resolveErr) {
+            console.warn("[최저가집사] 직접 HTML 타이틀 파싱 실패:", resolveErr);
+          }
+        }
+
+        if (!metaTitle) {
           await new Promise(r => setTimeout(r, 1200));
           metaTitle = extractProductKeywordFromUrl(url);
         }
