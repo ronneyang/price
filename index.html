@@ -1422,31 +1422,96 @@
             // 1. unshorten.me API를 활용하여 0.5초만에 단축 주소의 실제 가리키는 URL 획득 (CORS 우회 필터링)
             if (url.includes("link.coupang.com")) {
               logDiagnostic("🔗 단축 주소 고속 해제 엔진을 가동합니다...", 'info');
+              let unshortenData = null;
+              
+              // 1-A. codetabs 초고속 프록시 채널 시도
               try {
                 const unshortenUrl = `https://unshorten.me/json/${encodeURIComponent(url)}`;
-                const proxyUnshorten = `https://api.allorigins.win/get?url=${encodeURIComponent(unshortenUrl)}`;
+                const proxyUnshorten = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(unshortenUrl)}`;
                 const unshortenRes = await fetch(proxyUnshorten);
                 if (unshortenRes.ok) {
-                  const unshortenJson = await unshortenRes.json();
-                  const data = JSON.parse(unshortenJson.contents);
-                  if (data && data.success && data.resolved_url) {
-                    resolvedUrl = data.resolved_url;
-                    logDiagnostic("🎯 1차 목적지 해제 성공! 상세 주소 획득 완료.", 'info');
-                  }
+                  unshortenData = await unshortenRes.json();
                 }
-              } catch (unshortenErr) {
-                console.warn("unshorten.me fetch failed:", unshortenErr);
+              } catch (codetabsErr) {
+                console.warn("unshorten via codetabs failed:", codetabsErr);
+              }
+              
+              // 1-B. 실패 시 allorigins 백업 채널 가동
+              if (!unshortenData) {
+                try {
+                  logDiagnostic("🔄 기본 프록시 지연 감지. 백업 채널(AllOrigins)로 우회합니다...", 'info');
+                  const unshortenUrl = `https://unshorten.me/json/${encodeURIComponent(url)}`;
+                  const proxyUnshorten = `https://api.allorigins.win/get?url=${encodeURIComponent(unshortenUrl)}`;
+                  const unshortenRes = await fetch(proxyUnshorten);
+                  if (unshortenRes.ok) {
+                    const json = await unshortenRes.json();
+                    unshortenData = JSON.parse(json.contents);
+                  }
+                } catch (allOriginsErr) {
+                  console.warn("unshorten via allorigins failed:", allOriginsErr);
+                }
+              }
+              
+              if (unshortenData && unshortenData.success && unshortenData.resolved_url) {
+                resolvedUrl = unshortenData.resolved_url;
+                logDiagnostic("🎯 1차 목적지 해제 성공! 상세 주소 획득 완료.", 'info');
               }
             }
 
-            // 2. 이제 획득한 진짜 상세페이지 URL에서 상품 ID를 뽑아서 네이버 쇼핑 데이터베이스에서 직접 매칭! (방화벽 100% 완전 우회)
+            // 2. 이제 획득한 진짜 상세페이지 URL에서 상품 ID를 뽑아서 네이버 쇼핑에서 직접 매칭! (방화벽 100% 완전 우회)
             let parsedTitle = "";
             const idMatch = resolvedUrl.match(/\/products\/(\d+)/i);
             if (idMatch && idMatch[1]) {
               const productId = idMatch[1];
-              logDiagnostic(`🎯 쿠팡 상품 ID 검출 성공: ${productId}. 데이터베이스 대조 검색 중...`, 'info');
+              logDiagnostic(`🎯 쿠팡 상품 ID 검출 성공: ${productId}. 공용 데이터망 대조 검색 중...`, 'info');
               
-              if (isValidKey(naverClientId) && isValidKey(naverClientSecret)) {
+              // 2-A. 네이버 공개 검색망 (search.naver.com) 크롤링 우회 (별도 API 키 불필요, 100% 보장망)
+              try {
+                const naverSearchUrl = `https://search.naver.com/search.naver?query=${productId}`;
+                const proxySearch = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(naverSearchUrl)}`;
+                const searchRes = await fetch(proxySearch);
+                if (searchRes.ok) {
+                  const searchHtml = await searchRes.text();
+                  const altMatch1 = searchHtml.match(/alt=\x22([^\x22]+?)\s*-\s*[가-힣/a-zA-Z\s]+의\s+이미지\x22/i);
+                  if (altMatch1 && altMatch1[1]) {
+                    parsedTitle = altMatch1[1].trim();
+                  } else {
+                    const altMatch2 = searchHtml.match(/alt=\x22([^\x22]+?의\s+이미지)\x22/i);
+                    if (altMatch2 && altMatch2[1]) {
+                      parsedTitle = altMatch2[1].replace("의 이미지", "").trim();
+                    }
+                  }
+                }
+              } catch (scErr) {
+                console.warn("Public Naver Search scrape failed via codetabs:", scErr);
+              }
+              
+              // 2-B. Naver Search 실패 시 백업용 AllOrigins 사용
+              if (!parsedTitle) {
+                try {
+                  const naverSearchUrl = `https://search.naver.com/search.naver?query=${productId}`;
+                  const proxySearch = `https://api.allorigins.win/get?url=${encodeURIComponent(naverSearchUrl)}`;
+                  const searchRes = await fetch(proxySearch);
+                  if (searchRes.ok) {
+                    const json = await searchRes.json();
+                    const searchHtml = json.contents || "";
+                    const altMatch1 = searchHtml.match(/alt=\x22([^\x22]+?)\s*-\s*[가-힣/a-zA-Z\s]+의\s+이미지\x22/i);
+                    if (altMatch1 && altMatch1[1]) {
+                      parsedTitle = altMatch1[1].trim();
+                    } else {
+                      const altMatch2 = searchHtml.match(/alt=\x22([^\x22]+?의\s+이미지)\x22/i);
+                      if (altMatch2 && altMatch2[1]) {
+                        parsedTitle = altMatch2[1].replace("의 이미지", "").trim();
+                      }
+                    }
+                  }
+                } catch (scErr2) {
+                  console.warn("Public Naver Search scrape failed via allorigins:", scErr2);
+                }
+              }
+              
+              // 2-C. (백업의 백업) 네이버 쇼핑 OpenAPI 공식 채널 시도 (API 키 입력 사용자용)
+              if (!parsedTitle && isValidKey(naverClientId) && isValidKey(naverClientSecret)) {
                 try {
                   const query = encodeURIComponent(productId);
                   const targetUrl = `https://openapi.naver.com/v1/search/shop.json?query=${query}&display=3`;
@@ -1457,16 +1522,19 @@
                     const apiData = JSON.parse(apiJson.contents);
                     if (apiData.items && apiData.items.length > 0) {
                       parsedTitle = apiData.items[0].title.replace(/<[^>]+>/g, '').trim();
-                      logDiagnostic("✅ 데이터베이스 매칭 성공! 상품명: " + parsedTitle, 'success');
                     }
                   }
                 } catch (naverApiErr) {
                   console.warn("Naver API lookup via proxy failed:", naverApiErr);
                 }
               }
+              
+              if (parsedTitle) {
+                logDiagnostic("✅ 공용 데이터망 대조 성공! 상품명: " + parsedTitle, 'success');
+              }
             }
 
-            // 3. 만약 Naver API 매칭이 실패한 경우, 2차 직접 HTML 스크래핑을 최후의 방어막으로 시도
+            // 3. 만약 Naver 대조도 모조리 실패한 경우, 2차 직접 HTML 스크래핑 시도
             if (!parsedTitle) {
               logDiagnostic("🔄 2차 다이렉트 페이지 크롤링 분석으로 최후 우회를 시도합니다...", 'info');
               let htmlText = "";
