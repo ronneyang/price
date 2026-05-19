@@ -867,8 +867,21 @@
       </div>
 
       <!-- 결과 비교 리스트 영역 -->
-      <div class="results-container" id="results-container-ui">
-        <div class="results-header-row">
+      <div class="results-container" id="results-container-ui" style="position: relative;">
+        <!-- 세련된 우측 상단 닫기(X) 버튼 -->
+        <button 
+          class="sheet-close-btn" 
+          id="sheet-close-btn" 
+          style="position: absolute; top: 0; right: 0; background: transparent; border: none; color: var(--text-muted); font-size: 26px; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center; z-index: 10; transition: transform 0.1s; width: 36px; height: 36px; border-radius: 50%;"
+          onmouseover="this.style.color='#fff'; this.style.transform='scale(1.1)';"
+          onmouseout="this.style.color='var(--text-muted)'; this.style.transform='scale(1)';"
+          onmousedown="this.style.transform='scale(0.9)';"
+          onmouseup="this.style.transform='scale(1.1)';"
+        >
+          &times;
+        </button>
+
+        <div class="results-header-row" style="padding-right: 36px;">
           <div class="search-keyword-badge">AI 검색어</div>
           <h2 id="result-keyword-text">농심 신라면 120g</h2>
           <p>실시간 가격순 정렬 (배송비 포함)</p>
@@ -1582,6 +1595,7 @@
     // 다시 찾기 및 리셋
     document.getElementById('result-reset-btn').addEventListener('click', resetSearchFlow);
     document.getElementById('error-retry-btn').addEventListener('click', resetSearchFlow);
+    document.getElementById('sheet-close-btn').addEventListener('click', resetSearchFlow);
   </script>
 </body>
 </html>
