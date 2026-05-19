@@ -1608,6 +1608,38 @@
           ];
         }
 
+        // PC 버전 background.js의 핵심 브랜드 및 모델명 정밀 필터링 이식
+        if (searchKeyword && fetchedItems.length > 0) {
+          const keywordWords = searchKeyword.split(/[\s\-_]+/).filter(w => w.length >= 2);
+          if (keywordWords.length > 0) {
+            const brandWord = keywordWords[0].toLowerCase();
+            const genericWords = [
+              '남녀공용', '남성용', '여성용', '공용', '샌들', '슬리퍼', '신발', '슈즈', '아쿠아', '운동화', '슬링백', '스니커즈', '단화',
+              '샴푸', '린스', '염색', '새치', '케어', '에센스', '오일', '크림', '로션', '바디', '워시', '폼클렌징', '화장품', '기초', '세트',
+              '1개', '2개', '3개', '1팩', '2팩', '3팩', '묶음', '세트', '증정', '사은품', '패키지', '박스'
+            ];
+            
+            const specificWords = keywordWords.slice(1).filter(w => {
+              const wLower = w.toLowerCase();
+              return wLower !== brandWord && !genericWords.includes(wLower);
+            });
+
+            fetchedItems = fetchedItems.filter(item => {
+              const titleLower = item.title.toLowerCase();
+              
+              // 1. 브랜드명 필수 매칭 (예: '펩시', '농심' 등)
+              if (!titleLower.includes(brandWord)) return false;
+              
+              // 2. 모델명/모델코드 조건부 매칭 (검색어에 모델 지칭어가 존재할 경우 최소 하나 포함)
+              if (specificWords.length > 0) {
+                return specificWords.some(specWord => titleLower.includes(specWord.toLowerCase()));
+              }
+              
+              return true;
+            });
+          }
+        }
+
         // 전체 총합 가격순 오름차순 정렬
         results = fetchedItems.sort((a, b) => (a.price + a.shippingFee) - (b.price + b.shippingFee));
         status = 'DONE';
