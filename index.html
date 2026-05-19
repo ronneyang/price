@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#090d13">
   <title>최저가집사 (PriceButler) - Standalone Mobile</title>
   <style>
@@ -102,7 +104,7 @@
 
     .settings-toggle-btn:active {
       transform: scale(0.95);
-      background: rgba(255,255,255,0.1);
+      background: rgba(255, 255, 255, 0.1);
     }
 
     /* ── 3-Segment 슬라이딩 탭 메뉴 ── */
@@ -135,9 +137,11 @@
       display: flex;
       flex-direction: column;
       position: relative;
-      margin-bottom: 20px; /* 바텀시트 숨김에 맞춰서 최적화 */
+      margin-bottom: 20px;
+      /* 바텀시트 숨김에 맞춰서 최적화 */
       padding: 0 16px;
-      padding-bottom: 80px; /* 넉넉한 하단 여백 추가 (가로모드 대응) */
+      padding-bottom: 80px;
+      /* 넉넉한 하단 여백 추가 (가로모드 대응) */
     }
 
     /* ── 대시보드 그리드 및 카드 스타일 ── */
@@ -243,7 +247,7 @@
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
     }
 
     .dashboard-card .card-text-group {
@@ -276,8 +280,15 @@
     }
 
     @keyframes slideDown {
-      from { opacity: 0; transform: translateY(-10px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .url-input-wrapper {
@@ -341,8 +352,13 @@
     }
 
     @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
     }
 
     .preview-card-frame {
@@ -395,10 +411,11 @@
       left: 0;
       width: 100%;
       z-index: 200;
-      transform: translateY(100%); /* 완전히 숨김 상태 시작 */
+      transform: translateY(100%);
+      /* 완전히 숨김 상태 시작 */
       height: 75vh;
       transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), height 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-      box-shadow: 0 -12px 40px rgba(0,0,0,0.65);
+      box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.65);
     }
 
     .bottom-sheet.expanded {
@@ -417,8 +434,10 @@
       background: rgba(255, 255, 255, 0.15);
       border-radius: 2px;
       margin: 0 auto 16px;
-      cursor: ns-resize; /* 드래그 가능 표시 */
-      touch-action: none; /* 터치 스크롤 방지 */
+      cursor: ns-resize;
+      /* 드래그 가능 표시 */
+      touch-action: none;
+      /* 터치 스크롤 방지 */
     }
 
     /* 로딩 상태 */
@@ -440,7 +459,11 @@
       margin: 0 auto 16px;
     }
 
-    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
 
     .loading-message {
       font-size: 13px;
@@ -719,7 +742,7 @@
     }
 
     .input-group input {
-      background: rgba(0,0,0,0.25);
+      background: rgba(0, 0, 0, 0.25);
       border: 1px solid var(--glass-border);
       border-radius: 8px;
       padding: 10px 12px;
@@ -771,7 +794,9 @@
       letter-spacing: 0.3px;
     }
 
-    .ai-chat-label span { font-size: 13px; }
+    .ai-chat-label span {
+      font-size: 13px;
+    }
 
     .ai-chat-row {
       display: flex;
@@ -791,8 +816,14 @@
       transition: border-color 0.2s;
     }
 
-    .ai-chat-input::placeholder { color: rgba(255,255,255,0.3); font-size: 12px; }
-    .ai-chat-input:focus { border-color: rgba(59, 130, 246, 0.6); }
+    .ai-chat-input::placeholder {
+      color: rgba(255, 255, 255, 0.3);
+      font-size: 12px;
+    }
+
+    .ai-chat-input:focus {
+      border-color: rgba(59, 130, 246, 0.6);
+    }
 
     .ai-chat-send-btn {
       width: 38px;
@@ -809,14 +840,23 @@
       flex-shrink: 0;
     }
 
-    .ai-chat-send-btn:hover { background: #2563eb; }
-    .ai-chat-send-btn:active { transform: scale(0.92); }
-    .ai-chat-send-btn:disabled { background: #374151; cursor: not-allowed; }
+    .ai-chat-send-btn:hover {
+      background: #2563eb;
+    }
+
+    .ai-chat-send-btn:active {
+      transform: scale(0.92);
+    }
+
+    .ai-chat-send-btn:disabled {
+      background: #374151;
+      cursor: not-allowed;
+    }
 
     .ai-chat-response {
       margin-top: 8px;
       font-size: 11px;
-      color: rgba(255,255,255,0.55);
+      color: rgba(255, 255, 255, 0.55);
       line-height: 1.5;
       min-height: 0;
       transition: all 0.3s;
@@ -828,11 +868,19 @@
     }
 
     @keyframes pulse-text {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.4;
+      }
     }
   </style>
 </head>
+
 <body>
 
   <!-- HTML5 Native 디바이스 숨김 파일 입력 단자 (표준 모바일 브라우저에서 카메라 즉시 팝업 연동) -->
@@ -840,7 +888,7 @@
   <input type="file" id="gallery-file-input" accept="image/*" style="display: none;">
 
   <div class="app-container">
-    
+
     <!-- ── 상단 헤더 영역 ── -->
     <header class="app-header">
       <div class="header-logo">
@@ -855,7 +903,7 @@
 
     <!-- ── 메인 콘텐츠 패널 ── -->
     <main class="main-content">
-      
+
       <div class="dashboard-container">
 
         <!-- 인앱 브라우저 안내 배너 (기본 숨김) -->
@@ -863,10 +911,11 @@
           <div class="warning-icon">⚠️</div>
           <div class="warning-text">
             <h4>인앱 브라우저 감지됨</h4>
-            <p>카톡/네이버 브라우저에서는 카메라 기능이 제한될 수 있습니다. <strong>우측 상단 메뉴(⫶ 또는 ⋯)를 눌러 '다른 브라우저로 열기'</strong>를 선택하시면 원활한 촬영 인식이 가능합니다!</p>
+            <p>카톡/네이버 브라우저에서는 카메라 기능이 제한될 수 있습니다. <strong>우측 상단 메뉴(⫶ 또는 ⋯)를 눌러 '다른 브라우저로 열기'</strong>를 선택하시면 원활한 촬영 인식이
+              가능합니다!</p>
           </div>
         </div>
-        
+
         <!-- 1. 실시간 촬영 검색 카드 -->
         <div class="dashboard-card" id="card-trigger-camera">
           <div class="card-glow-bg blue"></div>
@@ -905,7 +954,8 @@
 
         <!-- 4. AI 직접 텍스트 검색 카드 -->
         <div class="dashboard-card" id="card-trigger-ai-text">
-          <div class="card-glow-bg" style="background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.2), transparent 70%);"></div>
+          <div class="card-glow-bg"
+            style="background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.2), transparent 70%);"></div>
           <div class="card-content">
             <div class="card-icon">💬</div>
             <div class="card-text-group">
@@ -916,46 +966,31 @@
         </div>
 
         <!-- 상세 링크 직접 입력 패널 (기본 숨김) -->
-        <div class="dashboard-url-pane" id="dashboard-url-pane" style="display: none; flex-direction: row; gap: 8px; align-items: center; padding: 12px 14px;">
+        <div class="dashboard-url-pane" id="dashboard-url-pane"
+          style="display: none; flex-direction: row; gap: 8px; align-items: center; padding: 12px 14px;">
           <div class="url-input-wrapper" style="flex: 1; position: relative; display: flex; align-items: center;">
-            <input 
-              type="text" 
-              class="url-input-field" 
-              id="url-input-field" 
-              placeholder="상세페이지 URL 주소 붙여넣기" 
-              style="padding-right: 32px;"
-            />
+            <input type="text" class="url-input-field" id="url-input-field" placeholder="상세페이지 URL 주소 붙여넣기"
+              style="padding-right: 32px;" />
             <button class="clear-input-btn" id="clear-url-input-btn" style="right: 8px;">&times;</button>
           </div>
 
-          <button 
-            class="url-search-submit-btn" 
-            id="url-search-submit-btn" 
-            style="flex-shrink: 0; padding: 12px 16px; font-size: 13px; white-space: nowrap;"
-            disabled
-          >
+          <button class="url-search-submit-btn" id="url-search-submit-btn"
+            style="flex-shrink: 0; padding: 12px 16px; font-size: 13px; white-space: nowrap;" disabled>
             🧙‍♂️ 분석
           </button>
         </div>
 
         <!-- AI 직접 텍스트 검색 패널 (기본 숨김) -->
-        <div class="dashboard-url-pane" id="dashboard-ai-pane" style="display: none; flex-direction: row; gap: 8px; align-items: center; padding: 12px 14px;">
+        <div class="dashboard-url-pane" id="dashboard-ai-pane"
+          style="display: none; flex-direction: row; gap: 8px; align-items: center; padding: 12px 14px;">
           <div class="url-input-wrapper" style="flex: 1; position: relative; display: flex; align-items: center;">
-            <input 
-              type="text" 
-              class="url-input-field" 
-              id="ai-main-input-field" 
-              placeholder="예: 코카콜라 355ml 24캔 찾아줘" 
-              style="padding-right: 32px;"
-            />
+            <input type="text" class="url-input-field" id="ai-main-input-field" placeholder="예: 코카콜라 355ml 24캔 찾아줘"
+              style="padding-right: 32px;" />
             <button class="clear-input-btn" id="clear-ai-input-btn" style="right: 8px;">&times;</button>
           </div>
 
-          <button 
-            class="url-search-submit-btn" 
-            id="ai-search-submit-btn" 
-            style="flex-shrink: 0; padding: 12px 16px; font-size: 13px; white-space: nowrap;"
-          >
+          <button class="url-search-submit-btn" id="ai-search-submit-btn"
+            style="flex-shrink: 0; padding: 12px 16px; font-size: 13px; white-space: nowrap;">
             🚀 검색
           </button>
         </div>
@@ -996,15 +1031,11 @@
       <!-- 결과 비교 리스트 영역 -->
       <div class="results-container" id="results-container-ui" style="position: relative;">
         <!-- 세련된 우측 상단 닫기(X) 버튼 -->
-        <button 
-          class="sheet-close-btn" 
-          id="sheet-close-btn" 
+        <button class="sheet-close-btn" id="sheet-close-btn"
           style="position: absolute; top: 0; right: 0; background: transparent; border: none; color: var(--text-muted); font-size: 26px; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center; z-index: 10; transition: transform 0.1s; width: 36px; height: 36px; border-radius: 50%;"
           onmouseover="this.style.color='#fff'; this.style.transform='scale(1.1)';"
           onmouseout="this.style.color='var(--text-muted)'; this.style.transform='scale(1)';"
-          onmousedown="this.style.transform='scale(0.9)';"
-          onmouseup="this.style.transform='scale(1.1)';"
-        >
+          onmousedown="this.style.transform='scale(0.9)';" onmouseup="this.style.transform='scale(1.1)';">
           &times;
         </button>
 
@@ -1024,13 +1055,8 @@
             <span>✨</span> GEMINI AI 조건 추가 검색
           </div>
           <div class="ai-chat-row">
-            <input
-              type="text"
-              id="ai-chat-input"
-              class="ai-chat-input"
-              placeholder="예: 355ml만, 1+1 행사만, 배송비 무료만..."
-              maxlength="80"
-            >
+            <input type="text" id="ai-chat-input" class="ai-chat-input" placeholder="예: 355ml만, 1+1 행사만, 배송비 무료만..."
+              maxlength="80">
             <button id="ai-chat-send-btn" class="ai-chat-send-btn" title="AI에게 요청하기">🚀</button>
           </div>
           <div id="ai-chat-response" class="ai-chat-response"></div>
@@ -1050,15 +1076,17 @@
           <h2>⚙️ 최저가집사 API 설정</h2>
           <button class="modal-close-btn" id="close-settings-btn">&times;</button>
         </div>
-        
+
         <div class="modal-body">
           <p class="modal-instruction">스마트폰 단독으로 이미지 인식을 사용하기 위한 API 인증키를 설정합니다. 비워둘 경우 스마트한 모형(Mock) 테스팅이 제공됩니다.</p>
-          
+
           <div class="input-group">
             <label>Google Cloud Vision API Key</label>
             <input type="text" id="setting-vision-key" placeholder="AIzaSyA...">
             <span class="input-guide">
-              * 발급 경로: <a href="https://console.cloud.google.com" target="_blank" style="color: var(--accent-blue); text-decoration: none;">구글 클라우드 콘솔</a> 로그인 &rarr; 새 프로젝트 생성 &rarr; Cloud Vision API 사용 설정 &rarr; 사용자 인증 정보에서 API 키 생성.
+              * 발급 경로: <a href="https://console.cloud.google.com" target="_blank"
+                style="color: var(--accent-blue); text-decoration: none;">구글 클라우드 콘솔</a> 로그인 &rarr; 새 프로젝트 생성 &rarr;
+              Cloud Vision API 사용 설정 &rarr; 사용자 인증 정보에서 API 키 생성.
             </span>
           </div>
 
@@ -1066,7 +1094,9 @@
             <label>Gemini API Key (Google AI Studio)</label>
             <input type="text" id="setting-gemini-key" placeholder="AIzaSyA...">
             <span class="input-guide">
-              * 발급 경로: <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: var(--accent-blue); text-decoration: none;">Google AI Studio</a> 접속 후 API 키 생성. (Vision API와 분리 사용)
+              * 발급 경로: <a href="https://aistudio.google.com/app/apikey" target="_blank"
+                style="color: var(--accent-blue); text-decoration: none;">Google AI Studio</a> 접속 후 API 키 생성. (Vision
+              API와 분리 사용)
             </span>
           </div>
 
@@ -1074,7 +1104,9 @@
             <label>Naver Search API Client ID</label>
             <input type="text" id="setting-naver-id" placeholder="Client ID 입력">
             <span class="input-guide">
-              * 발급 경로: <a href="https://developers.naver.com" target="_blank" style="color: var(--accent-blue); text-decoration: none;">네이버 개발자 센터</a> &rarr; Application 등록 &rarr; 사용 API에서 "검색" 선택 &rarr; 비로그인 오픈 API 환경에서 "웹 설정" 추가 후 발급.
+              * 발급 경로: <a href="https://developers.naver.com" target="_blank"
+                style="color: var(--accent-blue); text-decoration: none;">네이버 개발자 센터</a> &rarr; Application 등록 &rarr; 사용
+              API에서 "검색" 선택 &rarr; 비로그인 오픈 API 환경에서 "웹 설정" 추가 후 발급.
             </span>
           </div>
 
@@ -1083,7 +1115,8 @@
             <input type="text" id="setting-naver-secret" placeholder="Client Secret 입력">
           </div>
 
-          <div class="input-group" style="margin-top: 10px; border-top: 1px dashed var(--glass-border); padding-top: 12px;">
+          <div class="input-group"
+            style="margin-top: 10px; border-top: 1px dashed var(--glass-border); padding-top: 12px;">
             <label>로컬 백엔드 서버 주소 (CORS 우회용 프록시)</label>
             <input type="text" id="setting-backend-url" placeholder="http://localhost:3000">
             <span class="input-guide">
@@ -1092,11 +1125,15 @@
           </div>
 
           <!-- 실시간 API 진단 로그 패널 -->
-          <div class="diagnostics-panel" style="margin-top: 15px; border-top: 1px dashed var(--glass-border); padding-top: 12px;">
-            <label style="color: #ff9f43; font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+          <div class="diagnostics-panel"
+            style="margin-top: 15px; border-top: 1px dashed var(--glass-border); padding-top: 12px;">
+            <label
+              style="color: #ff9f43; font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
               🩺 실시간 API 통신 진단 콘솔 (Diagnostics Logs)
             </label>
-            <div id="diagnostics-log-box" style="background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; padding: 10px; font-family: monospace; font-size: 10px; color: #a9b1d6; height: 95px; overflow-y: auto; line-height: 1.5; white-space: pre-wrap; text-align: left;">[시스템] API 키 설정 및 통신 대기 중...</div>
+            <div id="diagnostics-log-box"
+              style="background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; padding: 10px; font-family: monospace; font-size: 10px; color: #a9b1d6; height: 95px; overflow-y: auto; line-height: 1.5; white-space: pre-wrap; text-align: left;">
+              [시스템] API 키 설정 및 통신 대기 중...</div>
           </div>
         </div>
 
@@ -1149,7 +1186,7 @@
       if (type === 'error') color = '#f7768e';
       if (type === 'success') color = '#9ece6a';
       if (type === 'warn') color = '#e0af68';
-      
+
       box.innerHTML += `\n<span style="color: ${color}">[${time}] ${msg}</span>`;
       box.scrollTop = box.scrollHeight;
     }
@@ -1160,7 +1197,7 @@
     const urlInputField = document.getElementById('url-input-field');
     const clearUrlInputBtn = document.getElementById('clear-url-input-btn');
     const urlSearchSubmitBtn = document.getElementById('url-search-submit-btn');
-    
+
     const cardTriggerCamera = document.getElementById('card-trigger-camera');
     const cardTriggerGallery = document.getElementById('card-trigger-gallery');
     const cardTriggerLink = document.getElementById('card-trigger-link');
@@ -1170,23 +1207,23 @@
     const aiMainInputField = document.getElementById('ai-main-input-field');
     const clearAiInputBtn = document.getElementById('clear-ai-input-btn');
     const aiSearchSubmitBtn = document.getElementById('ai-search-submit-btn');
-    
+
     const selectedPreviewArea = document.getElementById('selected-preview-area');
     const selectedPreviewImg = document.getElementById('selected-preview-img');
     const previewFilenameText = document.getElementById('preview-filename-text');
-    
+
     const priceBottomSheet = document.getElementById('price-bottom-sheet');
     const loadingStateUi = document.getElementById('loading-state-ui');
     const loadingMessageText = document.getElementById('loading-message-text');
     const errorStateUi = document.getElementById('error-state-ui');
     const resultsContainerUi = document.getElementById('results-container-ui');
     const resultsPriceListBox = document.getElementById('results-price-list-box');
-    
+
     const openSettingsBtn = document.getElementById('open-settings-btn');
     const closeSettingsBtn = document.getElementById('close-settings-btn');
     const settingsBackdropUi = document.getElementById('settings-backdrop-ui');
     const saveSettingsBtn = document.getElementById('save-settings-btn');
-    
+
     // 설정 인풋들
     const settingVisionKey = document.getElementById('setting-vision-key');
     const settingGeminiKey = document.getElementById('setting-gemini-key');
@@ -1211,7 +1248,7 @@
         cameraFileInput.removeAttribute('capture');
         console.log("[최저가집사] 인앱 브라우저로 감지되어 capture 속성을 제거하고 안전 선택 모드로 전환했습니다.");
       }
-      
+
       updateStatusUi();
     });
 
@@ -1228,13 +1265,13 @@
       naverClientId = settingNaverId.value.trim();
       naverClientSecret = settingNaverSecret.value.trim();
       backendUrl = settingBackendUrl.value.trim() || 'http://localhost:3000';
-      
+
       localStorage.setItem('visionApiKey', visionApiKey);
       localStorage.setItem('geminiApiKey', geminiApiKey);
       localStorage.setItem('naverClientId', naverClientId);
       localStorage.setItem('naverClientSecret', naverClientSecret);
       localStorage.setItem('backendUrl', backendUrl);
-      
+
       settingsBackdropUi.style.display = 'none';
       alert('설정이 안전하게 보관되었습니다!');
     });
@@ -1255,8 +1292,8 @@
       } else if (status === 'ANALYZING' || status === 'SEARCHING') {
         priceBottomSheet.classList.add('expanded');
         loadingStateUi.style.display = 'block';
-        loadingMessageText.textContent = (status === 'ANALYZING') 
-          ? '🤖 AI 비전이 사진에서 키워드를 파싱하는 중...' 
+        loadingMessageText.textContent = (status === 'ANALYZING')
+          ? '🤖 AI 비전이 사진에서 키워드를 파싱하는 중...'
           : '⚡ 국내 전체 온라인 몰의 최신 최저가를 매칭 중...';
       } else if (status === 'ERROR') {
         priceBottomSheet.classList.add('expanded');
@@ -1266,7 +1303,7 @@
         priceBottomSheet.classList.add('full-results');
         resultsContainerUi.style.display = 'flex';
         document.getElementById('result-keyword-text').textContent = keyword;
-        
+
         renderResultsList();
       }
     }
@@ -1276,16 +1313,16 @@
       keyword = '';
       results = [];
       errorMessage = '';
-      
+
       // 파일 인풋들 값 비우기
       cameraFileInput.value = '';
       galleryFileInput.value = '';
-      
+
       // 이미지 미리보기 리셋
       selectedPreviewArea.style.display = 'none';
       selectedPreviewImg.src = '';
       previewFilenameText.textContent = '';
-      
+
       urlInputField.value = '';
       urlSearchSubmitBtn.disabled = true;
       clearUrlInputBtn.style.display = 'none';
@@ -1402,18 +1439,18 @@
 
       const urlRegex = /(https?:\/\/[^\s]+)/gi;
       const urlMatch = rawInput.match(urlRegex);
-      
+
       if (!urlMatch) {
         alert('올바른 웹 상품 주소(http:// 또는 https://)가 포함되어야 합니다.');
         return;
       }
-      
+
       const targetUrl = urlMatch[0];
-      
+
       // 만약 주소 앞뒤에 상품명 텍스트가 같이 붙여넣어진 경우 (쿠팡 앱 공유하기 버튼 양식)
       let extractedTitle = rawInput.replace(targetUrl, "").trim();
       extractedTitle = refineProductTitle(extractedTitle);
-      
+
       if (extractedTitle && extractedTitle.length > 2) {
         logDiagnostic("✨ 공유 텍스트에서 진짜 상품명 검출 성공: " + extractedTitle, 'success');
         keyword = extractedTitle;
@@ -1430,7 +1467,7 @@
     function normalizeKeyword(rawKeyword) {
       if (!rawKeyword) return "";
       let kw = rawKeyword.trim().toLowerCase();
-      
+
       const correctionMap = {
         'peps': '펩시',
         'pepsi': '펩시',
@@ -1453,32 +1490,32 @@
     // 상세한 스펙 노이즈(용량, 수량, 단위, 불필요한 기호)를 말끔히 정제하여 순수 검색 키워드만 추출
     function refineProductTitle(title) {
       if (!title) return "";
-      
+
       let clean = title.trim();
-      
+
       // 1. 대괄호/소괄호 및 그 내용물 제거 (예: [쿠팡무료배송], (48개입) 등)
       clean = clean.replace(/\[[^\]]*\]/g, " ");
       clean = clean.replace(/\([^\)]*\)/g, " ");
-      
+
       // 2. 주소창, 콤마, 말줄임표(...) 및 특수 기호 제거
       clean = clean.replace(/[\n\r,\.!@#$%\^&\*_+=\-\/\\|\[\]\{\}\(\)<>\?;:]/g, " ");
-      
+
       // 3. 흔히 등장하는 규격/단위/용량/수량 형태 제거용 정규식
       clean = clean.replace(/\d+\s*(?:x|\*)\s*\d+\s*(?:mm|cm|m)/gi, " "); // 크기 규격 (예: 8 x 11 mm)
       clean = clean.replace(/\d+\s*(?:mm|cm|m|g|kg|ml|l|매|개|입|통|병|포|팩|장|권|벌|세트|set|box|박스)/gi, " "); // 용량/수량 단위
-      
+
       // 4. 불필요한 공용 쇼핑 단어 정제
       clean = clean.replace(/\b(?:쿠팡|추천|특가|할인|무료배송|배송|정품|공식|기획|세일)\b/gi, " ");
-      
+
       // 5. 연속된 공백 한 개로 정규화
       clean = clean.replace(/\s+/g, " ").trim();
-      
+
       // 6. 단어가 너무 길어지면 앞의 핵심 명사 3~4개만 추출 (일반적으로 브랜드명 + 핵심제품명 위주)
       const words = clean.split(" ");
       if (words.length > 4) {
         clean = words.slice(0, 4).join(" ");
       }
-      
+
       return clean;
     }
 
@@ -1518,7 +1555,7 @@
             const genericWords = ['skin care', 'hair care', 'shampoo', 'conditioner', 'cosmetics', 'product', 'bottle', 'lotion', 'cream', 'beauty', 'liquid'];
 
             const koreanEntities = webEntities.filter(e => e.description && /[가-힣]/.test(e.description) && e.score >= 0.3);
-            const otherEntities  = webEntities.filter(e => {
+            const otherEntities = webEntities.filter(e => {
               if (!e.description || e.score < 0.5) return false;
               return !genericWords.some(g => e.description.toLowerCase() === g);
             });
@@ -1533,7 +1570,7 @@
               const filteredEntities = koreanEntities.map(e => e.description).filter(w => !noiseWords.some(nw => w.includes(nw)));
               detectedKeyword = filteredEntities.slice(0, 2).join(' ');
             }
-            
+
             if (!detectedKeyword && textAnnotations.length > 0) {
               const fullText = textAnnotations[0].description;
               const allWords = fullText.match(/[가-힣]{2,}/g) || [];
@@ -1575,7 +1612,7 @@
     function extractProductKeywordFromUrl(url) {
       try {
         const decoded = decodeURIComponent(url);
-        
+
         // 1. URL의 쿼리 스트링 파라미터 중 q, query, keyword, kwd 등에서 한글 검색어 추출 시도
         try {
           const urlObj = new URL(url);
@@ -1610,7 +1647,7 @@
       } catch (e) {
         console.warn("URL에서 키워드 추출 실패:", e);
       }
-      
+
       // 3. 추출 실패 시 도메인별 중립 단어로 폴백
       if (url.includes("coupang.com")) return "입력한 쿠팡 상품";
       if (url.includes("11st.co.kr")) return "입력한 11번가 상품";
@@ -1625,7 +1662,7 @@
 
       try {
         let metaTitle = "";
-        
+
         try {
           const res = await fetch(`${getActiveBackendUrl()}/search/parse-url?url=${encodeURIComponent(url)}`);
           if (res.ok) {
@@ -1642,14 +1679,14 @@
         if (!metaTitle) {
           try {
             logDiagnostic("🌐 기기 자체 웹 데이터 해석기를 가동합니다 (단축 링크 우회 추적 중)...", 'info');
-            
+
             let resolvedUrl = url;
-            
+
             // 1. unshorten.me API를 활용하여 0.5초만에 단축 주소의 실제 가리키는 URL 획득 (CORS 우회 필터링)
             if (url.includes("link.coupang.com")) {
               logDiagnostic("🔗 단축 주소 고속 해제 엔진을 가동합니다...", 'info');
               let unshortenData = null;
-              
+
               // 1-A. codetabs 초고속 프록시 채널 시도
               try {
                 const unshortenUrl = `https://unshorten.me/json/${encodeURIComponent(url)}`;
@@ -1661,7 +1698,7 @@
               } catch (codetabsErr) {
                 console.warn("unshorten via codetabs failed:", codetabsErr);
               }
-              
+
               // 1-B. 실패 시 allorigins 백업 채널 가동
               if (!unshortenData) {
                 try {
@@ -1677,7 +1714,7 @@
                   console.warn("unshorten via allorigins failed:", allOriginsErr);
                 }
               }
-              
+
               if (unshortenData && unshortenData.success && unshortenData.resolved_url) {
                 resolvedUrl = unshortenData.resolved_url;
                 logDiagnostic("🎯 1차 목적지 해제 성공! 상세 주소 획득 완료.", 'info');
@@ -1690,7 +1727,7 @@
             if (idMatch && idMatch[1]) {
               const productId = idMatch[1];
               logDiagnostic(`🎯 쿠팡 상품 ID 검출 성공: ${productId}. 공용 데이터망 대조 검색 중...`, 'info');
-              
+
               // 2-A. 네이버 공개 검색망 (search.naver.com) 크롤링 우회 (별도 API 키 불필요, 100% 보장망)
               try {
                 const naverSearchUrl = `https://search.naver.com/search.naver?query=${productId}`;
@@ -1711,7 +1748,7 @@
               } catch (scErr) {
                 console.warn("Public Naver Search scrape failed via codetabs:", scErr);
               }
-              
+
               // 2-B. Naver Search 실패 시 백업용 AllOrigins 사용
               if (!parsedTitle) {
                 try {
@@ -1735,7 +1772,7 @@
                   console.warn("Public Naver Search scrape failed via allorigins:", scErr2);
                 }
               }
-              
+
               // 2-C. (백업의 백업) 네이버 쇼핑 OpenAPI 공식 채널 시도 (API 키 입력 사용자용)
               if (!parsedTitle && isValidKey(naverClientId) && isValidKey(naverClientSecret)) {
                 try {
@@ -1754,7 +1791,7 @@
                   console.warn("Naver API lookup via proxy failed:", naverApiErr);
                 }
               }
-              
+
               if (parsedTitle) {
                 logDiagnostic("✅ 공용 데이터망 대조 성공! 상품명: " + parsedTitle, 'success');
               }
@@ -1774,13 +1811,13 @@
               } catch (e) {
                 console.warn("Final HTML fetch failed:", e);
               }
-              
+
               if (htmlText) {
                 const finalTitleMatch = htmlText.match(/<title>([^<]+)<\/title>/i);
                 if (finalTitleMatch && finalTitleMatch[1]) {
                   parsedTitle = finalTitleMatch[1].trim();
                 }
-                
+
                 const finalImageMatch = htmlText.match(/<meta\s+property="og:image"\s+content="([^"]+)"/i);
                 if (finalImageMatch && finalImageMatch[1]) {
                   photoUrl = finalImageMatch[1];
@@ -1817,32 +1854,32 @@
       }
     }
 
-    // 메인 화면용 AI 직접 검색 파이프라인
+    // 메인 화면용 AI 직접 검색 파이프라인 (완전 보정 버전)
     async function startAiDirectSearch(userInput) {
       if (!isValidKey(geminiApiKey)) {
         alert("Gemini API 키가 입력되지 않았습니다. 설정창에서 입력해 주세요.");
         return;
       }
-      
+
       // 검색 화면 띄우기
       photoUrl = null;
       keyword = userInput;
       status = 'ANALYZING';
       errorMessage = '';
       updateStatusUi();
-      loadingMessageText.textContent = '🤖 Gemini AI가 자연어를 분석하여 최적의 검색어를 도출 중...';
+      loadingMessageText.textContent = '🤖 Gemini AI가 최적의 검색어를 도출 중...';
 
       try {
         const systemContext = `
-사용자가 다음과 같이 상품 검색을 요청했습니다: "${userInput}"
+    사용자가 다음과 같이 상품 검색을 요청했습니다: "${userInput}"
 
-지시사항:
-1. 사용자가 찾는 상품의 '핵심 검색어(브랜드명, 상품명, 용량 등)'만 정확히 추출하세요.
-2. "찾아줘", "알려줘" 등 불필요한 서술어는 제거하세요.
-3. 절대로 단어(예: 메디덤, 코카콜라 등)를 한 글자로 축약하거나 쪼개지 말고 원본 명사를 그대로 유지하세요.
-4. 결과는 반드시 아래 JSON 형식으로만 출력하세요. 다른 텍스트나 마크다운(백틱)은 절대 포함하지 마세요.
+    지시사항:
+    1. 사용자가 찾는 상품의 '핵심 검색어(브랜드명, 상품명, 용량 등)'만 정확히 추출하세요.
+    2. "찾아줘", "알려줘" 등 불필요한 서술어는 제거하세요.
+    3. 절대로 단어(예: 메디덤, 코카콜라 등)를 한 글자로 축약하거나 쪼개지 말고 원본 명사를 그대로 유지하세요.
+    4. 결과는 반드시 아래 JSON 형식으로만 출력하세요.
 
-{"keyword": "추출된검색어"}
+    {"keyword": "추출된검색어"}
         `.trim();
 
         const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${geminiApiKey}`;
@@ -1851,7 +1888,11 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ parts: [{ text: systemContext }] }],
-            generationConfig: { temperature: 0.1, maxOutputTokens: 60 }
+            generationConfig: {
+              temperature: 0.1,
+              maxOutputTokens: 60,
+              responseMimeType: "application/json" // 💡 무조건 JSON으로만 대답하도록 강제 (가장 중요)
+            }
           })
         });
 
@@ -1861,27 +1902,41 @@
         }
 
         const data = await res.json();
-        const rawResponse = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+        let rawResponse = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
 
         if (!rawResponse) throw new Error('AI 응답을 분석할 수 없습니다.');
 
-        let refinedKeyword = userInput; // fallback
+        let searchKeyword = userInput; // 기본값: 사용자 입력 원본
+
         try {
+          // 1. 순수 JSON 파싱 시도
           const cleanJsonStr = rawResponse.replace(/```json/g, '').replace(/```/g, '').trim();
           const parsed = JSON.parse(cleanJsonStr);
           if (parsed.keyword) {
-            refinedKeyword = parsed.keyword;
+            searchKeyword = parsed.keyword.trim();
           }
         } catch (e) {
-          console.warn('JSON parsing failed, using raw text:', rawResponse);
-          refinedKeyword = rawResponse; // 만약 JSON이 아니면 그냥 텍스트 자체를 사용
+          console.warn('JSON 파싱 실패, 2차 안전 보정 가동');
+          // 2. 파싱이 깨졌을 경우 "keyword": "알맹이" 에서 알맹이만 정규식으로 강제 추출
+          const fallbackMatch = rawResponse.match(/"keyword"\s*:\s*"([^"]+)"/);
+          if (fallbackMatch && fallbackMatch[1]) {
+            searchKeyword = fallbackMatch[1].trim();
+          } else {
+            // 그것도 안되면 그냥 특수문자 다 날리기
+            searchKeyword = rawResponse.replace(/["'{}\[\]:\n\r]/g, ' ').replace(/\s+/g, ' ').trim() || userInput;
+          }
         }
-        
-        keyword = refinedKeyword;
+
+        // 3. 최후의 킬 스위치 (그래도 코드가 묻어나오면 원본 입력값으로 롤백)
+        if (searchKeyword.includes("keyword") || searchKeyword.includes("{")) {
+          searchKeyword = userInput;
+        }
+
+        keyword = searchKeyword;
         status = 'SEARCHING';
         updateStatusUi();
-        
-        await performPriceSearch(refinedKeyword);
+
+        await performPriceSearch(searchKeyword);
 
       } catch (err) {
         console.error("AI Direct Search Error:", err);
@@ -2029,7 +2084,7 @@
     // ── 결과 렌더링 엔진 ──
     function renderResultsList() {
       resultsPriceListBox.innerHTML = '';
-      
+
       if (results.length === 0) {
         resultsPriceListBox.innerHTML += `<div class="empty-results">😔 매칭되는 온라인 쇼핑몰 최저가를 찾지 못했습니다.</div>`;
         return;
@@ -2038,7 +2093,7 @@
       results.forEach((item, index) => {
         const fallbackIcon = '🛍️';
         const isGold = index === 0;
-        
+
         const cardHtml = `
           <a href="${item.link}" target="_blank" rel="noopener noreferrer" class="mobile-price-card ${isGold ? 'gold-rank' : ''}">
             <div class="card-thumb-wrapper">
@@ -2184,13 +2239,13 @@
       const currentY = e.touches ? e.touches[0].clientY : e.clientY;
       const deltaY = startDragY - currentY; // 올리면 양수, 내리면 음수
       let newHeight = startSheetHeight + deltaY;
-      
+
       const minHeight = 100;
       const maxHeight = window.innerHeight * 0.95; // 화면 95%까지 확장 가능
-      
+
       if (newHeight < minHeight) newHeight = minHeight;
       if (newHeight > maxHeight) newHeight = maxHeight;
-      
+
       priceBottomSheet.style.height = `${newHeight}px`;
     }
 
@@ -2198,7 +2253,7 @@
       if (!isDraggingSheet) return;
       isDraggingSheet = false;
       priceBottomSheet.style.transition = ''; // 애니메이션 복구
-      
+
       // 만약 너무 작게 내렸으면 닫기(IDLE) 처리
       if (priceBottomSheet.getBoundingClientRect().height <= 110) {
         resetSearchFlow();
@@ -2206,8 +2261,8 @@
     }
 
     // 모바일 터치 이벤트
-    handleEl.addEventListener('touchstart', onDragStart, {passive: true});
-    document.addEventListener('touchmove', onDragMove, {passive: true});
+    handleEl.addEventListener('touchstart', onDragStart, { passive: true });
+    document.addEventListener('touchmove', onDragMove, { passive: true });
     document.addEventListener('touchend', onDragEnd);
 
     // PC 마우스 이벤트
@@ -2216,4 +2271,5 @@
     document.addEventListener('mouseup', onDragEnd);
   </script>
 </body>
+
 </html>
