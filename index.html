@@ -134,6 +134,17 @@
       position: relative;
       margin-bottom: 20px; /* 바텀시트 숨김에 맞춰서 최적화 */
       padding: 0 16px;
+      overflow-y: auto;
+      padding-bottom: 80px; /* 넉넉한 하단 여백 추가 (가로모드 대응) */
+    }
+
+    /* 웹킷 기반 브라우저 스크롤바 숨기기 혹은 얇게 커스텀 */
+    .main-content::-webkit-scrollbar {
+      width: 4px;
+    }
+    .main-content::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
     }
 
     /* ── 대시보드 그리드 및 카드 스타일 ── */
