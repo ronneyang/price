@@ -1507,6 +1507,41 @@
       return clean;
     }
 
+    // Gemini API 전용 자동 재시도(Retry with Exponential Backoff) 유틸리티 함수
+    async function fetchGeminiWithRetry(url, options, maxRetries = 3, delayMs = 600) {
+      let lastError = null;
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          const res = await fetch(url, options);
+          
+          // 503 (High Demand) 또는 500, 504, 429 (Too Many Requests / Rate Limit) 발생 시 재시도 트리거
+          if (res.status === 503 || res.status === 429 || res.status === 500 || res.status === 504) {
+            const errText = await res.clone().text();
+            console.warn(`[최저가집사] Gemini API 임시 장애 감지 (HTTP ${res.status}), ${attempt}회차 시도 실패. 재시도합니다...`, errText);
+            logDiagnostic(`⏳ Gemini 서버 지연 감지 (HTTP ${res.status}). ${attempt}회차 재시도 중...`, 'warn');
+            
+            if (attempt < maxRetries) {
+              await new Promise(resolve => setTimeout(resolve, delayMs * Math.pow(1.5, attempt - 1)));
+              continue;
+            }
+            return res;
+          }
+          
+          return res;
+        } catch (err) {
+          lastError = err;
+          console.warn(`[최저가집사] Gemini API 네트워크 통신 장애, ${attempt}회차 시도 실패:`, err.message);
+          logDiagnostic(`🔌 네트워크 일시 지연. ${attempt}회차 재시도 중...`, 'warn');
+          
+          if (attempt < maxRetries) {
+            await new Promise(resolve => setTimeout(resolve, delayMs * Math.pow(1.5, attempt - 1)));
+            continue;
+          }
+        }
+      }
+      throw lastError || new Error("Gemini API 통신에 완전히 실패했습니다.");
+    }
+
     // ── 핵심 AI 비전 키워드 추출 & 실시간 최저가 탐색 스크립트 ──
     async function runAiDetection(base64Image) {
       status = 'ANALYZING';
@@ -1530,7 +1565,7 @@
             `.trim();
 
             const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${geminiApiKey}`;
-            const res = await fetch(geminiUrl, {
+            const res = await fetchGeminiWithRetry(geminiUrl, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -1900,7 +1935,7 @@
         }];
 
         const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${geminiApiKey}`;
-        const res = await fetch(geminiUrl, {
+        const res = await fetchGeminiWithRetry(geminiUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -2051,7 +2086,7 @@ ${productListText}
             `.trim();
 
             const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${geminiApiKey}`;
-            const res = await fetch(geminiUrl, {
+            const res = await fetchGeminiWithRetry(geminiUrl, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -2238,7 +2273,7 @@ ${productListText}
         }];
 
         const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${geminiApiKey}`;
-        const res = await fetch(geminiUrl, {
+        const res = await fetchGeminiWithRetry(geminiUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
