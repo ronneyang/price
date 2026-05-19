@@ -1051,6 +1051,14 @@
             </span>
           </div>
 
+          <div class="input-group" style="margin-top: 10px;">
+            <label>Gemini API Key (Google AI Studio)</label>
+            <input type="text" id="setting-gemini-key" placeholder="AIzaSyA...">
+            <span class="input-guide">
+              * 발급 경로: <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: var(--accent-blue); text-decoration: none;">Google AI Studio</a> 접속 후 API 키 생성. (Vision API와 분리 사용)
+            </span>
+          </div>
+
           <div class="input-group">
             <label>Naver Search API Client ID</label>
             <input type="text" id="setting-naver-id" placeholder="Client ID 입력">
@@ -1100,6 +1108,7 @@
 
     // API 키 관리 및 백엔드 서버 설정
     let visionApiKey = localStorage.getItem('visionApiKey') || '';
+    let geminiApiKey = localStorage.getItem('geminiApiKey') || '';
     let naverClientId = localStorage.getItem('naverClientId') || '';
     let naverClientSecret = localStorage.getItem('naverClientSecret') || '';
     let backendUrl = localStorage.getItem('backendUrl') || 'http://localhost:3000';
@@ -1169,6 +1178,7 @@
     
     // 설정 인풋들
     const settingVisionKey = document.getElementById('setting-vision-key');
+    const settingGeminiKey = document.getElementById('setting-gemini-key');
     const settingNaverId = document.getElementById('setting-naver-id');
     const settingNaverSecret = document.getElementById('setting-naver-secret');
     const settingBackendUrl = document.getElementById('setting-backend-url');
@@ -1177,6 +1187,7 @@
     window.addEventListener('DOMContentLoaded', () => {
       // 로컬 스토리지 데이터 인풋 매핑
       settingVisionKey.value = visionApiKey;
+      settingGeminiKey.value = geminiApiKey;
       settingNaverId.value = naverClientId;
       settingNaverSecret.value = naverClientSecret;
       settingBackendUrl.value = backendUrl;
@@ -1202,11 +1213,13 @@
     });
     saveSettingsBtn.addEventListener('click', () => {
       visionApiKey = settingVisionKey.value.trim();
+      geminiApiKey = settingGeminiKey.value.trim();
       naverClientId = settingNaverId.value.trim();
       naverClientSecret = settingNaverSecret.value.trim();
       backendUrl = settingBackendUrl.value.trim() || 'http://localhost:3000';
       
       localStorage.setItem('visionApiKey', visionApiKey);
+      localStorage.setItem('geminiApiKey', geminiApiKey);
       localStorage.setItem('naverClientId', naverClientId);
       localStorage.setItem('naverClientSecret', naverClientSecret);
       localStorage.setItem('backendUrl', backendUrl);
@@ -1794,8 +1807,8 @@
 
     // 메인 화면용 AI 직접 검색 파이프라인
     async function startAiDirectSearch(userInput) {
-      if (!isValidKey(visionApiKey)) {
-        alert("Google API 키가 입력되지 않았습니다. 설정창에서 입력해 주세요.");
+      if (!isValidKey(geminiApiKey)) {
+        alert("Gemini API 키가 입력되지 않았습니다. 설정창에서 입력해 주세요.");
         return;
       }
       
@@ -1819,7 +1832,7 @@
 - 예시: 펩시 제로 콜라 355ml 24캔
         `.trim();
 
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${visionApiKey}`;
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
         const res = await fetch(geminiUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -2030,9 +2043,9 @@
       const responseBox = document.getElementById('ai-chat-response');
       const sendBtn = document.getElementById('ai-chat-send-btn');
 
-      if (!isValidKey(visionApiKey)) {
+      if (!isValidKey(geminiApiKey)) {
         responseBox.className = 'ai-chat-response';
-        responseBox.textContent = '⚠️ 설정창에서 Google API 키를 먼저 입력해 주세요.';
+        responseBox.textContent = '⚠️ 설정창에서 Gemini API 키를 먼저 입력해 주세요.';
         return;
       }
 
@@ -2057,7 +2070,7 @@
 - 예시: 펩시콜라 355ml 캔
         `.trim();
 
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${visionApiKey}`;
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
         const res = await fetch(geminiUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
