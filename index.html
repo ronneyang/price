@@ -1145,6 +1145,8 @@
     let errorMessage = '';
     let isMockDataUsed = false;
     let lastAiConversationReply = '';
+    let isMainDevice = true; // 사진 속 제품이 본체/본품인지 여부
+    let estimatedPrice = 0;   // 사진 속 가격표 숫자
 
     // API 키 관리 및 백엔드 서버 설정
     let geminiApiKey = localStorage.getItem('geminiApiKey') || '';
@@ -1301,6 +1303,8 @@
       results = [];
       errorMessage = '';
       lastAiConversationReply = '';
+      isMainDevice = true;
+      estimatedPrice = 0;
 
       // 파일 인풋들 값 비우기
       cameraFileInput.value = '';
@@ -1557,11 +1561,12 @@
 
             const prompt = `
 이 이미지 속 상품을 식별하고, 온라인 최저가 검색에 사용할 단 하나의 '핵심 상품명(브랜드명, 정확한 상품명, 용량/수량 등)'을 정확하게 추출하세요.
+또한 상품 라벨이나 포장에 적힌 가격표 정보(가격 숫자)를 세심히 포착하고, 이 제품이 기기 본체(본품)인지 악세서리/부속품(케이스, 필름 등)인지도 함께 분석하세요.
 - 이미지에 글씨(텍스트)가 있다면 상품 라벨이나 로고 위주로 읽으세요.
 - "열량", "고형량", "영양정보", "유통기한", "주의사항" 등 제조 정보 텍스트는 완전히 무시하세요.
 - 불필요한 서술어나 감탄사 없이, 오직 검색창에 바로 넣을 수 있는 최적의 검색어만 추출하세요.
 - 반드시 아래 JSON 스키마 형식으로 응답하세요:
-{"keyword": "추출된 상품 검색어"}
+{"keyword": "추출된 상품 검색어", "is_main_device": true, "estimated_price": 0}
             `.trim();
 
             const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${geminiApiKey}`;
@@ -1589,9 +1594,17 @@
                       keyword: {
                         type: "STRING",
                         description: "추출된 상품 핵심 검색어"
+                      },
+                      is_main_device: {
+                        type: "BOOLEAN",
+                        description: "사진 속 상품이 악세서리가 아닌 본체 기기(본품)인지 여부"
+                      },
+                      estimated_price: {
+                        type: "NUMBER",
+                        description: "사진 속 가격표나 텍스트에서 포착된 가격 숫자 (포착된 가격이 없으면 0)"
                       }
                     },
-                    required: ["keyword"]
+                    required: ["keyword", "is_main_device", "estimated_price"]
                   }
                 }
               })
@@ -1610,6 +1623,8 @@
               if (parsed.keyword) {
                 detectedKeyword = parsed.keyword.trim();
               }
+              isMainDevice = parsed.is_main_device !== undefined ? parsed.is_main_device : true;
+              estimatedPrice = parsed.estimated_price !== undefined ? parseInt(parsed.estimated_price, 10) : 0;
             } catch (jsonErr) {
               console.warn("[최저가집사] Gemini Multimodal JSON 파싱 실패, 2차 백업 파싱 가동");
               const fallbackMatch = rawResponse.match(/"keyword"\s*:\s*"([^"]+)"/);
@@ -1618,8 +1633,12 @@
               } else {
                 detectedKeyword = rawResponse.replace(/["'{}\[\]:\n\r]/g, ' ').replace(/\s+/g, ' ').trim();
               }
+              const mainMatch = rawResponse.match(/"is_main_device"\s*:\s*(true|false)/);
+              isMainDevice = mainMatch ? mainMatch[1] === 'true' : true;
+              const priceMatch = rawResponse.match(/"estimated_price"\s*:\s*([0-9]+)/);
+              estimatedPrice = priceMatch ? parseInt(priceMatch[1], 10) : 0;
             }
-            logDiagnostic("📸 Gemini 멀티모달 분석 성공: " + detectedKeyword, 'success');
+            logDiagnostic(`📸 Gemini 멀티모달 분석 성공! 키워드: "${detectedKeyword}", 본품여부: ${isMainDevice}, 가격: ${estimatedPrice}원`, 'success');
           } catch (geminiErr) {
             console.warn("[최저가집사] Gemini 멀티모달 분석 실패:", geminiErr);
             throw new Error(`이미지 분석 실패: ${geminiErr.message || 'Gemini API 호출 중 장애가 발생했습니다.'}`);
@@ -1927,9 +1946,14 @@
                 searchKeyword: {
                   type: "STRING",
                   description: "네이버 쇼핑 검색에 보낼 핵심 상품명 및 사양 (예: '메디덤', '펩시 제로 355ml 24캔')"
+                },
+                filterMode: {
+                  type: "STRING",
+                  description: "검색 필터 모드. 본품/기기만 원하면 'MAIN_ONLY', 악세사리/부속품만 원하면 'ACCESSORY_ONLY', 전체는 'ALL'",
+                  enum: ["ALL", "MAIN_ONLY", "ACCESSORY_ONLY"]
                 }
               },
-              required: ["searchKeyword"]
+              required: ["searchKeyword", "filterMode"]
             }
           }]
         }];
@@ -1956,6 +1980,7 @@
         const part = data?.candidates?.[0]?.content?.parts?.[0];
 
         let searchKeyword = userInput; // 기본값으로 사용자 입력 원본 유지
+        let filterMode = "ALL";
 
         // AI가 Function Calling을 호출했는지 검사
         if (part?.functionCall && part.functionCall.name === "searchPrice") {
@@ -1963,10 +1988,13 @@
           if (args && args.searchKeyword) {
             searchKeyword = args.searchKeyword.trim();
           }
+          if (args && args.filterMode) {
+            filterMode = args.filterMode;
+          }
           keyword = searchKeyword;
           status = 'SEARCHING';
           updateStatusUi();
-          await performPriceSearch(searchKeyword);
+          await performPriceSearch(searchKeyword, filterMode);
         } else if (part?.text) {
           // 도구를 호출하지 않고 일반 대화 텍스트만 리턴한 경우 (예: "안녕하세요!")
           console.log("AI Chat Response:", part.text.trim());
@@ -1988,7 +2016,8 @@
 
 
     // 다중 쇼핑몰 최저가 실시간 검색 수행
-    async function performPriceSearch(searchKeyword) {
+    // 다중 쇼핑몰 최저가 실시간 검색 수행
+    async function performPriceSearch(searchKeyword, filterMode = "ALL") {
       try {
         let fetchedItems = [];
         isMockDataUsed = false;
@@ -1997,7 +2026,7 @@
         // ── 1단계: 검색어 분석 ─────────────────────────────────────────
         let broadSearchKeyword = searchKeyword; // 💡 임의로 자르지 않고 원본 문자열 전체 유지
 
-        logDiagnostic(`🔍 API 쿼리: '${broadSearchKeyword}' (원본: '${searchKeyword}')`, 'info');
+        logDiagnostic(`🔍 API 쿼리: '${broadSearchKeyword}' (필터: ${filterMode})`, 'info');
         logDiagnostic('🩺 실시간 최저가 조사를 가동합니다...', 'info');
 
         // ── 네이버 OpenAPI 직접 호출 (broad query) ─────────────────────
@@ -2062,27 +2091,40 @@
         // ── 2단계: Gemini API를 활용한 'LLM as a Judge' 정밀 매칭 (오매칭 원천 차단) ──────────
         if (fetchedItems.length > 0 && isValidKey(geminiApiKey)) {
           const before = fetchedItems.length;
-          logDiagnostic(`🤖 Gemini LLM Judge를 가동하여 2차 검수를 시도합니다... (총 ${before}개 후보)`, 'info');
+          logDiagnostic(`🤖 Gemini LLM Judge를 가동하여 2차 정밀 검수를 시작합니다... (총 ${before}개 후보)`, 'info');
 
           try {
-            const productListText = fetchedItems.map((item, index) => `[${index}] ${item.title}`).join('\n');
+            const productListText = fetchedItems.map((item, index) => {
+              return `[${index}] 제목: "${item.title}" | 가격: ${item.price}원 | 플랫폼: "${item.platform}"`;
+            }).join('\n');
 
             const systemPrompt = `
-당신은 대한민국 쇼핑몰 상품 매칭 적합성을 판별하는 초정밀 AI 판사(Judge)입니다.
-사용자의 검색어 의도와 네이버/쿠팡 등 쇼핑몰에서 긁어온 상품 목록의 제목을 비교하여, 사용자가 진짜 원했던 바로 그 '동일 상품(본품 및 스펙 일치)'만 완벽하게 걸러내야 합니다.
+당신은 대한민국 쇼핑몰 상품 매칭 적합성을 판별하고 비정상적인 가격 교란 상품을 걸러내는 초정밀 AI 판사(Judge)입니다.
+사용자의 검색 의도, 포착된 기기 단서 정보, 수집된 상품 목록 전체를 비교 분석하여 진짜 사용자가 찾는 '적격한 동일 상품(본품 및 구성 일치)'만 골라내고, 이상치나 미끼 상품을 완벽히 차단해야 합니다.
 
-[판별 가이드라인]
-1. 사용자의 검색어(의도): "${searchKeyword}"
-2. 사용자가 '본품(예: 보조배터리)'을 찾고 있다면, 결과에 섞여 있는 '부속품 및 악세서리(예: 케이스, 그립톡, 파우치, 스트랩 등)'는 무조건 탈락(제외)시키세요.
-3. 반대로 사용자가 처음부터 '부속품(예: 케이스, 보호필름)'을 찾고 있다면, 부속품만 남기고 '본품'은 과감히 탈락시키세요.
-4. 파생형 및 상세 옵션(예: 제로 칼로리 vs 일반 칼로리, 무선 vs 유선, 프로 vs 일반)의 혼동이 있을 경우, 사용자의 검색 스펙/의도와 정확하게 일치하는 상품만 합격시키세요.
-5. 판매자가 검색어와 완전히 똑같지 않은 동의어(예: "디지바이스" = "디지몬 대장치")를 상품명에 사용했더라도, 문맥상 완전히 동일한 상품임이 명백하다면 합격시키세요.
-6. 브랜드명 매칭을 정교하게 판별하세요. 만약 사용자가 특정 브랜드(예: 펩시)를 찾고 있는데 타사 브랜드(예: 코카콜라) 제품이 섞여있다면 제외시키세요.
+[분석 정보 & 기준 단서]
+- 사용자가 찾으려 하는 검색 키워드(의도): "${searchKeyword}"
+- 검색 보조 필터 모드 (filterMode): "${filterMode}" (MAIN_ONLY: 본체만, ACCESSORY_ONLY: 부속품만, ALL: 전체)
+- 이미지 분석 감지 단서:
+  * 본품(디바이스)으로 식별됨 여부 (isMainDevice): ${isMainDevice ? "예(본품)" : "아니오(부속품/기타)"}
+  * 사진 속 포착된 실물 가격표 가격 (estimatedPrice): ${estimatedPrice > 0 ? estimatedPrice + "원" : "미포착(0원)"}
 
-[입력 데이터]
+[AI 판사 필터링 및 판결 지침]
+1. '이상치(Outlier) 제거':
+   - 수집된 상품 목록 전체의 평균 가격대를 분석하세요.
+   - 지나치게 비싼 상품(예: 비정상적인 낚시성 배송비 유도 또는 리셀러 미끼 상품)이나, 지나치게 싼 상품(예: 기기 본품이 아닌 젤리 케이스, 액정 필름 등 1,000~5,000원 대의 악세서리 단품 가격)은 가격 이상치로 규정하여 제외하세요.
+2. '본품 검증':
+   - 상품명이 원래 검색어와 비슷해 보이더라도, 가격대와 구성 정보를 종합 판단하십시오.
+   - 사용자가 '기기 본체(본품)'를 찾으려는 의도임이 명백한 경우(isMainDevice=true 또는 filterMode=MAIN_ONLY), 기기 본체가 아닌 '부속품 단품(케이스, 파우치, 거치대, 보호 필름 등)'은 예외 없이 탈락(제외)시키세요.
+   - 반대로 사용자가 '부속품/악세서리'를 명시적으로 찾고 있다면(filterMode=ACCESSORY_ONLY), 기기 본체(본품)를 제외하고 부속품들만 합격시키세요.
+3. '유연한 맥락적 판단':
+   - 판매자가 마케팅을 위해 사용하는 동의어/별칭(예: "디지바이스" = "디지몬 대장치", "nintendo switch" = "닌텐도 스위치")은 문맥상 완벽히 동일한 제품군임이 명백하다면 합격시키세요.
+   - 브랜드명 매칭이 명확히 대치되는 경우(예: '펩시'를 찾는데 '코카콜라'가 섞인 경우)에는 과감히 탈락시키세요.
+
+[입력 상품 목록]
 ${productListText}
 
-위의 [입력 데이터]를 철저히 검수하고, 합격 판정을 받은 상품들의 고유 [번호] 목록만을 아래 JSON 스키마 형식으로 응답하세요.
+위의 상품 목록 중 모든 조건과 가격대, 구성을 통과하여 '합격' 판정을 받은 상품의 고유 [번호] 목록을 아래의 JSON 스키마 형식으로 응답하세요.
             `.trim();
 
             const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${geminiApiKey}`;
@@ -2249,9 +2291,16 @@ ${productListText}
 현재 검색되어 화면에 표시된 기준 상품 키워드: "${keyword}"
 
 사용자의 추가 조건 요청에 따라 새로운 검색어를 조합해야 한다면 searchPrice 도구를 호출하세요.
-- 원본 상품의 브랜드명과 핵심 명사를 절대 한 글자로 축약하거나 훼손하지 말고 그대로 유지하세요.
-- 사용자의 추가 조건(용량, 수량, 종류 등)을 자연스럽게 조합해 최적화된 새로운 검색어를 도출하세요.
-- 만약 단순 인사나 칭찬, 검색과 상관없는 대화라면 도구를 호출하지 말고 친절하고 자연스러운 한글 텍스트로 바로 응답하세요.
+[매우 중요한 지침]
+1. 사용자의 피드백을 통해 검색어 자체를 무단으로 변경(Rewriting)하거나 브랜드/제품명을 임의로 축약/수정하지 말고, 기존 검색 키워드 "${keyword}"를 최대한 100% 보존하세요.
+   - 예: 사용자가 "본체만 찾아줘"라고 해도 키워드 "${keyword}"는 손대지 말고 그대로 두고, filterMode="MAIN_ONLY"를 넘기세요.
+   - 예: 사용자가 "액세서리만 보여줘"라고 해도 키워드 "${keyword}"는 보존하고, filterMode="ACCESSORY_ONLY"를 넘기세요.
+2. 사용자가 특정한 추가 옵션(예: "제로 칼로리", "355ml", "24캔")을 덧붙여 검색해달라고 할 때만 기존 검색어 뒤에 해당 수량/옵션 단어를 덧붙이세요.
+3. filterMode 지정 기준:
+   - 사용자가 "본체만", "본품만", "기기만" 등으로 요청하면 'MAIN_ONLY'를 지정하세요.
+   - 사용자가 "악세사리만", "부품만", "케이스만", "커버만" 등으로 요청하면 'ACCESSORY_ONLY'를 지정하세요.
+   - 그 외 일반적인 조건 추가나 전체 검색은 'ALL'을 지정하세요.
+4. 단순 대화나 검색과 무관한 말은 도구를 호출하지 말고 친절히 한글 답변 텍스트로 응답하세요.
         `.trim();
 
         // Gemini에게 제공할 도구(Function Calling) 선언
@@ -2265,9 +2314,14 @@ ${productListText}
                 searchKeyword: {
                   type: "STRING",
                   description: "조합 및 필터링이 완료된 최종 쇼핑 검색어 (예: '코카콜라 제로 355ml 24캔')"
+                },
+                filterMode: {
+                  type: "STRING",
+                  description: "검색 필터 모드. 본품/기기만 원하면 'MAIN_ONLY', 악세사리/부속품만 원하면 'ACCESSORY_ONLY', 전체는 'ALL'",
+                  enum: ["ALL", "MAIN_ONLY", "ACCESSORY_ONLY"]
                 }
               },
-              required: ["searchKeyword"]
+              required: ["searchKeyword", "filterMode"]
             }
           }]
         }];
@@ -2296,19 +2350,20 @@ ${productListText}
         // AI가 Function Calling을 호출했는지 검사
         if (part?.functionCall && part.functionCall.name === "searchPrice") {
           const refinedKeyword = part.functionCall.args.searchKeyword.trim();
+          const filterMode = part.functionCall.args.filterMode || "ALL";
 
           responseBox.className = 'ai-chat-response';
-          responseBox.textContent = `🔍 "${refinedKeyword}" 로 재검색합니다...`;
+          responseBox.textContent = `🔍 "${refinedKeyword}" (필터: ${filterMode}) 로 재검색합니다...`;
 
-          // 새 키워드로 검색 재실행
+          // 새 키워드와 필터 모드로 검색 재실행
           keyword = refinedKeyword;
           document.getElementById('result-keyword-text').textContent = refinedKeyword;
           status = 'SEARCHING';
           updateStatusUi();
-          await performPriceSearch(refinedKeyword);
+          await performPriceSearch(refinedKeyword, filterMode);
 
           // 검색 후 응답 박스 초기화
-          responseBox.textContent = `✅ "${refinedKeyword}" 결과입니다. 추가 조건을 더 요청하실 수 있어요!`;
+          responseBox.textContent = `✅ "${refinedKeyword}" (필터: ${filterMode}) 결과입니다. 추가 조건을 더 요청하실 수 있어요!`;
         } else if (part?.text) {
           // 도구를 실행하지 않고 일반 텍스트 대화 응답이 온 경우 (예: "천만에요!", "무엇을 도와드릴까요?")
           responseBox.className = 'ai-chat-response';
