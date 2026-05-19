@@ -1834,14 +1834,15 @@
 
       try {
         const systemContext = `
-너는 한국 온라인 쇼핑 최저가 검색 도우미야.
-사용자 요청: "${userInput}"
+사용자가 다음과 같이 상품 검색을 요청했습니다: "${userInput}"
 
-위 정보를 바탕으로, 네이버 쇼핑 검색에 가장 적합한 명사형 핵심 검색 키워드를 만들어줘.
-- 반드시 사용자가 입력한 고유 명사, 브랜드명, 핵심 상품명을 절대 한 글자로 임의 축약하거나 훼손하지 마. 원본을 그대로 유지해.
-- 사용자 조건(용량, 수량, 단위 등)을 포함해.
-- 결과는 검색 키워드 문자열만 출력해. 설명, 부연, 따옴표 없이.
-- 예시: 펩시 제로 콜라 355ml 24캔
+지시사항:
+1. 사용자가 찾는 상품의 '핵심 검색어(브랜드명, 상품명, 용량 등)'만 정확히 추출하세요.
+2. "찾아줘", "알려줘" 등 불필요한 서술어는 제거하세요.
+3. 절대로 단어(예: 메디덤, 코카콜라 등)를 한 글자로 축약하거나 쪼개지 말고 원본 명사를 그대로 유지하세요.
+4. 결과는 반드시 아래 JSON 형식으로만 출력하세요. 다른 텍스트나 마크다운(백틱)은 절대 포함하지 마세요.
+
+{"keyword": "추출된검색어"}
         `.trim();
 
         const geminiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
@@ -1850,7 +1851,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ parts: [{ text: systemContext }] }],
-            generationConfig: { temperature: 0.2, maxOutputTokens: 50 }
+            generationConfig: { temperature: 0.1, maxOutputTokens: 60 }
           })
         });
 
@@ -1860,9 +1861,21 @@
         }
 
         const data = await res.json();
-        const refinedKeyword = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+        const rawResponse = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
 
-        if (!refinedKeyword) throw new Error('AI 응답을 분석할 수 없습니다.');
+        if (!rawResponse) throw new Error('AI 응답을 분석할 수 없습니다.');
+
+        let refinedKeyword = userInput; // fallback
+        try {
+          const cleanJsonStr = rawResponse.replace(/```json/g, '').replace(/```/g, '').trim();
+          const parsed = JSON.parse(cleanJsonStr);
+          if (parsed.keyword) {
+            refinedKeyword = parsed.keyword;
+          }
+        } catch (e) {
+          console.warn('JSON parsing failed, using raw text:', rawResponse);
+          refinedKeyword = rawResponse; // 만약 JSON이 아니면 그냥 텍스트 자체를 사용
+        }
         
         keyword = refinedKeyword;
         status = 'SEARCHING';
@@ -2071,15 +2084,15 @@
 
       try {
         const systemContext = `
-너는 한국 온라인 쇼핑 최저가 검색 도우미야.
-현재 검색된 원본 상품: "${keyword}"
+현재 검색된 기준 상품: "${keyword}"
 사용자의 추가 조건 요청: "${userRequest}"
 
-위 정보를 바탕으로, 네이버 쇼핑 검색에 최적화된 한국어 검색 키워드를 하나만 생성해.
-- 반드시 원본 상품의 브랜드명과 핵심 명사를 절대 한 글자로 임의 축약하거나 훼손하지 말고 그대로 유지해.
-- 사용자 조건(용량, 수량, 종류 등)을 자연스럽게 추가해.
-- 결과는 검색 키워드 문자열만 출력해. 설명, 부연, 따옴표 없이.
-- 예시: 펩시콜라 355ml 캔
+지시사항:
+1. 기존 상품에 사용자의 추가 조건을 더하여 새로운 '핵심 검색어'를 만들어주세요.
+2. 절대로 원래 브랜드명이나 명사를 한 글자로 축약하거나 훼손하지 말고 그대로 유지하세요.
+3. 결과는 반드시 아래 JSON 형식으로만 출력하세요. 다른 텍스트나 마크다운(백틱)은 절대 포함하지 마세요.
+
+{"keyword": "새로운검색어"}
         `.trim();
 
         const geminiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
@@ -2088,7 +2101,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ parts: [{ text: systemContext }] }],
-            generationConfig: { temperature: 0.2, maxOutputTokens: 50 }
+            generationConfig: { temperature: 0.1, maxOutputTokens: 60 }
           })
         });
 
@@ -2098,9 +2111,21 @@
         }
 
         const data = await res.json();
-        const refinedKeyword = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+        const rawResponse = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
 
-        if (!refinedKeyword) throw new Error('Gemini 응답에서 키워드를 추출하지 못했습니다.');
+        if (!rawResponse) throw new Error('Gemini 응답에서 키워드를 추출하지 못했습니다.');
+
+        let refinedKeyword = userRequest; // fallback
+        try {
+          const cleanJsonStr = rawResponse.replace(/```json/g, '').replace(/```/g, '').trim();
+          const parsed = JSON.parse(cleanJsonStr);
+          if (parsed.keyword) {
+            refinedKeyword = parsed.keyword;
+          }
+        } catch (e) {
+          console.warn('JSON parsing failed, using raw text:', rawResponse);
+          refinedKeyword = rawResponse; // 만약 JSON이 아니면 그냥 텍스트 자체를 사용
+        }
 
         responseBox.className = 'ai-chat-response';
         responseBox.textContent = `🔍 "${refinedKeyword}" 로 재검색합니다...`;
