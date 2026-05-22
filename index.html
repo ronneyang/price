@@ -2110,8 +2110,9 @@ ${productListText}
 
       // [안전망: 지능형 Fallback 장치 가동]
       if (finalResults.length === 0) {
-        logDiagnostic("⚠️ [지능형 Fallback 가동] 필터링 결과가 0건입니다. 사용자의 무정지 탐색을 위해 원본 전체를 보존하여 출력합니다.", 'warn');
-        results = items.sort((a, b) => (a.price + a.shippingFee) - (b.price + b.shippingFee));
+        logDiagnostic("⚠️ [지능형 Fallback 가동] 필터링 결과가 0건입니다. 사용자의 무정지 탐색을 위해 원본 전체를 정확도 순으로 출력합니다.", 'warn');
+        // 강제로 가격순으로 정렬하면 스티커가 위로 올라오므로, 네이버가 준 정확도(sim) 순서 원본을 그대로 보존
+        results = items;
       } else {
         results = finalResults.sort((a, b) => (a.price + a.shippingFee) - (b.price + b.shippingFee));
       }
