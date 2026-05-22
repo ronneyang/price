@@ -878,6 +878,83 @@
         opacity: 0.4;
       }
     }
+    /* 터미널(X-Ray) 모드 UI */
+    .terminal-overlay {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 40vh;
+      background: rgba(10, 10, 15, 0.95);
+      border-top: 2px solid #3b4261;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(10px);
+    }
+    .terminal-overlay.open {
+      transform: translateY(0);
+    }
+    .terminal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 16px;
+      background: #1f2335;
+      border-bottom: 1px solid #3b4261;
+      font-size: 12px;
+      font-weight: bold;
+      color: #7aa2f7;
+    }
+    .terminal-close-btn {
+      background: none;
+      border: none;
+      color: #f7768e;
+      cursor: pointer;
+      font-size: 20px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .terminal-content {
+      flex: 1;
+      padding: 12px 16px;
+      overflow-y: auto;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 11px;
+      line-height: 1.6;
+      color: #a9b1d6;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+    }
+    .terminal-toggle-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: #1f2335;
+      border: 2px solid #7aa2f7;
+      color: #7aa2f7;
+      font-size: 22px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      z-index: 9998;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+      transition: all 0.2s;
+    }
+    .terminal-toggle-btn:hover {
+      transform: scale(1.1);
+      background: #7aa2f7;
+      color: #1f2335;
+    }
   </style>
 </head>
 
@@ -1129,17 +1206,7 @@
             </span>
           </div>
 
-          <!-- 실시간 API 진단 로그 패널 -->
-          <div class="diagnostics-panel"
-            style="margin-top: 15px; border-top: 1px dashed var(--glass-border); padding-top: 12px;">
-            <label
-              style="color: #ff9f43; font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
-              🩺 실시간 API 통신 진단 콘솔 (Diagnostics Logs)
-            </label>
-            <div id="diagnostics-log-box"
-              style="background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; padding: 10px; font-family: monospace; font-size: 10px; color: #a9b1d6; height: 95px; overflow-y: auto; line-height: 1.5; white-space: pre-wrap; text-align: left;">
-              [시스템] API 키 설정 및 통신 대기 중...</div>
-          </div>
+
         </div>
 
         <div class="modal-footer">
@@ -1148,6 +1215,20 @@
       </div>
     </div>
 
+  </div>
+
+  <!-- 터미널 콘솔 토글 버튼 -->
+  <button id="terminal-toggle-btn" class="terminal-toggle-btn" title="개발자 X-Ray 로그 보기">👨‍💻</button>
+
+  <!-- 터미널 콘솔 오버레이 -->
+  <div id="terminal-overlay" class="terminal-overlay">
+    <div class="terminal-header">
+      <span>> SYSTEM.LOG :: AI X-RAY MODE</span>
+      <button id="terminal-close-btn" class="terminal-close-btn">&times;</button>
+    </div>
+    <div id="diagnostics-log-box" class="terminal-content">
+      <div style="margin-bottom: 4px;"><span style="color: #565f89;">[System]</span> <span style="color: #9ece6a; font-weight: bold;">[System]</span> <span style="color: #a9b1d6;">Terminal initialized. Waiting for pipeline execution...</span></div>
+    </div>
   </div>
 
   <script>
@@ -1207,16 +1288,54 @@
     }
 
     // 실시간 디버그/진단 로그 콘솔 함수
-    function logDiagnostic(msg, type = 'info') {
+    // 터미널 토글 로직
+    document.getElementById('terminal-toggle-btn').addEventListener('click', () => {
+      document.getElementById('terminal-overlay').classList.add('open');
+    });
+    document.getElementById('terminal-close-btn').addEventListener('click', () => {
+      document.getElementById('terminal-overlay').classList.remove('open');
+    });
+
+    function logDiagnostic(rawMsg, type = 'info') {
       const box = document.getElementById('diagnostics-log-box');
       if (!box) return;
-      const time = new Date().toLocaleTimeString();
-      let color = '#a9b1d6';
-      if (type === 'error') color = '#f7768e';
-      if (type === 'success') color = '#9ece6a';
-      if (type === 'warn') color = '#e0af68';
 
-      box.innerHTML += `\n<span style="color: ${color}">[${time}] ${msg}</span>`;
+      let tag = 'System';
+      let msg = rawMsg;
+      
+      // 자동 태깅
+      const tagMatch = rawMsg.match(/^\[(.*?)\]\s*(.*)/);
+      if (tagMatch) {
+        tag = tagMatch[1];
+        msg = tagMatch[2];
+      } else if (rawMsg.includes('Gemini') || rawMsg.includes('AI') || rawMsg.includes('Intent')) {
+        tag = 'AI Logic';
+      } else if (rawMsg.includes('API') || rawMsg.includes('통신') || rawMsg.includes('수집')) {
+        tag = 'Network';
+      } else if (rawMsg.includes('필터') || rawMsg.includes('하한선') || rawMsg.includes('상한선') || rawMsg.includes('제외')) {
+        tag = 'Data Filter';
+      }
+
+      let tagColor = '#7aa2f7'; // blue
+      if (tag.includes('AI')) tagColor = '#bb9af7'; // purple
+      if (tag.includes('Network')) tagColor = '#e0af68'; // yellow
+      if (tag.includes('Filter') || tag.includes('System')) tagColor = '#9ece6a'; // green
+      
+      if (type === 'error') tagColor = '#f7768e';
+
+      const now = new Date();
+      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+      
+      let msgColor = '#a9b1d6';
+      if (type === 'error') msgColor = '#f7768e';
+      if (type === 'success') msgColor = '#9ece6a';
+      if (type === 'warn') msgColor = '#e0af68';
+
+      const logNode = document.createElement('div');
+      logNode.style.marginBottom = '4px';
+      logNode.innerHTML = `<span style="color: #565f89;">[${timeStr}]</span> <span style="color: ${tagColor}; font-weight: bold;">[${tag}]</span> <span style="color: ${msgColor};">${msg.replace(/\n/g, '<br>')}</span>`;
+      
+      box.appendChild(logNode);
       box.scrollTop = box.scrollHeight;
     }
 
