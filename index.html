@@ -1920,7 +1920,7 @@
         if (isValidKey(naverClientId) && isValidKey(naverClientSecret)) {
           try {
             const query = encodeURIComponent(searchKeyword);
-            const targetUrl = `https://openapi.naver.com/v1/search/shop.json?query=${query}&display=30&sort=asc`;
+            const targetUrl = `https://openapi.naver.com/v1/search/shop.json?query=${query}&display=100&sort=sim`;
             const url = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
 
             const response = await fetch(url, {
