@@ -1999,14 +1999,7 @@
           continue;
         }
 
-        if (safeMaxPrice && price > safeMaxPrice) {
-          filterAuditLogs.push({
-            title: item.title,
-            price: price,
-            reason: `가격 상한선 초과 (기준: ${safeMaxPrice.toLocaleString()}원)`
-          });
-          continue;
-        }
+        // 상한선(safeMaxPrice) 필터링 삭제: 비싼 본체가 억울하게 삭제되어 비상 모드(Fallback)가 켜지는 현상을 방지함.
 
         const matchedExcludeWord = excludeKeywords.find(word => title.includes(word.toLowerCase()));
         if (matchedExcludeWord) {
